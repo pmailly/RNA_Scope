@@ -56,7 +56,7 @@ import org.xml.sax.SAXException;
  * @author phm
  */
 
-public class Processing {
+public class RNA_Scope_Processing {
     
     private static double pixDepth  = 1;
     
@@ -509,7 +509,7 @@ public class Processing {
         output_detail_Analyze.write("Image Name\t#Cell\tCell Vol\tCell negative\tIntegrated intensity in gene ref. channel\tMean intensity in gene ref. channel\t"
                 + "Integrated intensity in gene X channel\tNb gene ref. dots\tMean gene ref. dots volume\tSum of dots ref. integrated intensity\t"
                 + "Max of dots ref. integrated intensity\tNegative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
-                + "\tEstimated mean intensity background in gene ref. channel\n");
+                + "\tEstimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
         output_detail_Analyze.flush();
     }
     

@@ -7,9 +7,9 @@ import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
-import static RNA_Scope_Utils.JDialogOmeroConnect.imagesFolder;
-import static RNA_Scope_Utils.JDialogOmeroConnect.localImages;
-import static RNA_Scope_Utils.Processing.*;
+import static Omero_Utils.JDialogOmeroConnect.imagesFolder;
+import static Omero_Utils.JDialogOmeroConnect.localImages;
+import static RNA_Scope_Utils.RNA_Scope_Processing.*;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -164,8 +164,9 @@ public class RNA_Scope_Local implements PlugIn {
                          // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, imgGeneRef, imgGeneX);
 
-                        // Estimated background in gene reference channel
-                        double bgEstimated = find_background(imgGeneRef);
+                        // Estimated background in gene reference and gene X channel
+                        double bgGeneRefEstimated = find_background(imgGeneRef);
+                        double bgGeneXEstimated = find_background(imgGeneX);
 
                         // find intensity in gene reference for negative cell
                         String roiFile = inDir + File.separator+rootName + ".zip";
@@ -190,7 +191,7 @@ public class RNA_Scope_Local implements PlugIn {
                             output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getNegative()
                                     +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneXInt()+"\t"+
                                     listCells.get(n).getGeneRefDots()+"\t"+listCells.get(n).getGeneRefMeanDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+
-                                    listCells.get(n).getGeneRefDotMaxInt()+"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgEstimated+"\n");
+                                    listCells.get(n).getGeneRefDotMaxInt()+"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
                             output_detail_Analyze.flush();
                         }
 

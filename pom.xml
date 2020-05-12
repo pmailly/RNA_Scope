@@ -100,6 +100,11 @@
 	  <version>2.1.3-SNAPSHOT</version>
 	  <type>jar</type>
 	 </dependency>
+	 <dependency>
+	  <groupId>${project.groupId}</groupId>
+	  <artifactId>Omero_Utils</artifactId>
+	  <version>1.0.0</version>
+	 </dependency>
 	</dependencies>
         <repositories>
             <repository>
