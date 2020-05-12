@@ -11,9 +11,9 @@ import ij.*;
 import ij.measure.Calibration;
 import ij.plugin.PlugIn;
 import java.io.BufferedWriter;
-import Omero_Utils.JDialogOmeroConnect;
-import Omero_Utils.JDialogOmeroConnect.dialogCancel;
-import Omero_Utils.JDialogOmeroConnect.localImages;
+import RNA_Scope_Utils.JDialogOmeroConnect;
+import static RNA_Scope_Utils.JDialogOmeroConnect.dialogCancel;
+import static RNA_Scope_Utils.JDialogOmeroConnect.localImages;
 import java.awt.Frame;
 
 
