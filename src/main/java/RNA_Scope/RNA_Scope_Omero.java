@@ -29,7 +29,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_negativeCell;
 import static RNA_Scope_Utils.RNA_Scope_Processing.labelsObject;
-import static RNA_Scope_Utils.RNA_Scope_Processing.randomColorPop;
+import static RNA_Scope_Utils.RNA_Scope_Processing.colorPop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.readXML;
 import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
@@ -211,7 +211,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         new File(outDirResults + rootName + "_Objects.tif").delete();
 
                         // save random color nucleus popualation
-                        ImagePlus imgColorPop = randomColorPop (cellsPop, imgNuc);
+                        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
                         FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
                         ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
 

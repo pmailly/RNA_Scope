@@ -15,6 +15,7 @@ import ij.ImageStack;
 import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.measure.Calibration;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.ZProjector;
@@ -43,6 +44,7 @@ import mcib3d.image3d.ImageLabeller;
 import mcib3d.image3d.distanceMap3d.EDT;
 import mcib3d.image3d.processing.FastFilters3D;
 import mcib3d.image3d.regionGrowing.Watershed3D;
+import org.apache.tools.ant.taskdefs.WaitFor;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -165,15 +167,14 @@ public class RNA_Scope_Processing {
     /**
      * ramdom color nucleus population
      */
-    public static ImagePlus randomColorPop (Objects3DPopulation cellsPop,  ImagePlus img) {
+    public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img) {
         //create image objects population
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
         imgObj.set332RGBLut();
         imgObj.setCalibration(img.getCalibration());
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             Object3D obj = cellsPop.getObject(i);
-            int col = ThreadLocalRandom.current().nextInt(2, 255 + 1);
-            obj.draw(imgObj, col);
+            obj.draw(imgObj, (i+1));
         } 
         return(imgObj.getImagePlus());
     } 

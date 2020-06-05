@@ -214,8 +214,8 @@ public class RNA_Scope_Local implements PlugIn {
                         FileSaver ImgObjectsFile = new FileSaver(imgObjects);
                         ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_Objects.tif"); 
                         imgCells.closeImagePlus();
-                        // save random color nucleus popualation
-                        ImagePlus imgColorPop = randomColorPop (cellsPop, imgNuc);
+                        // save single color nucleus population
+                        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
                         FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
                         ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
 
