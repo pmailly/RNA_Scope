@@ -84,7 +84,7 @@ public class RNA_Scope_Processing {
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.setInsets(0, 120, 0);
-        gd.addCheckbox("Adult", false);
+        gd.addCheckbox("Nucleus detection adult", false);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
             gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
@@ -170,7 +170,6 @@ public class RNA_Scope_Processing {
     public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img) {
         //create image objects population
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
-        imgObj.set332RGBLut();
         imgObj.setCalibration(img.getCalibration());
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             Object3D obj = cellsPop.getObject(i);
@@ -245,10 +244,13 @@ public class RNA_Scope_Processing {
         System.out.println("-- Total nucleus Population after size filter: "+ nbNucPop);
         // create dilated nucleus population
         Objects3DPopulation cellsPop = new Objects3DPopulation();
-        for (int o = 0; o < nucPop.getNbObjects(); o++) {
-            Object3D obj = nucPop.getObject(o);
-            cellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil/cal.pixelDepth)));
-        }
+        if (nucDil != 0)
+            for (int o = 0; o < nucPop.getNbObjects(); o++) {
+                Object3D obj = nucPop.getObject(o);
+                cellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil/cal.pixelDepth)));
+            }
+        else
+            cellsPop.addObjects(nucPop.getObjectsList());
         return(cellsPop);
     }
     
