@@ -144,7 +144,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Find gene reference dots
                         Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
 
-                        // Find gene reference dots
+                        // Find gene X dots
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
                         
                         // Find cells parameters in geneRef and geneX images
