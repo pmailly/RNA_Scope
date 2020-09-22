@@ -251,7 +251,6 @@ public class RNA_Scope_Processing {
         clij2.release(imgCLDOG);
         Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
         clij2.release(imgCLBin);
-        System.out.println(genePop.getNbObjects()+" genes found");
         return(genePop);
     }
     
@@ -391,14 +390,15 @@ public class RNA_Scope_Processing {
      */
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
         ImagePlus img = new Duplicator().run(imgNuc);
-        removeOutliers(img, 15, 15, 3);
-        ClearCLBuffer imgCL = clij2.push(imgNuc);
-        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
-        clij2.release(imgCL);
-        ImagePlus imgDOG = clij2.pull(imgCLDOG);
-        clij2.release(imgCLDOG);
-        ImageStack stack = new ImageStack(imgDOG.getWidth(), imgNuc.getHeight());
-        for (int i = 1; i <= imgDOG.getStackSize(); i++) {
+        IJ.run(img, "Remove Outliers", "block_radius_x=50 block_radius_y=50 standard_deviations=1 stack");
+//        ClearCLBuffer imgCL = clij2.push(imgNuc);
+//        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
+//        clij2.release(imgCL);
+//        ImagePlus imgDOG = clij2.pull(imgCLDOG);
+//        clij2.release(imgCLDOG);
+        IJ.run(img, "Difference of Gaussians", "  sigma1=30 sigma2=10 stack");
+        ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
+        for (int i = 1; i <= img.getStackSize(); i++) {
             img.setZ(i);
             img.updateAndDraw();
             IJ.run(img, "Nuclei Outline", "blur=0 blur2=0 threshold_method=Triangle outlier_radius=0 outlier_threshold=1 max_nucleus_size=500 "
