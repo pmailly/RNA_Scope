@@ -144,9 +144,11 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Find gene reference dots
                         Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
 
-
+                        // Find gene reference dots
+                        Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                        
                         // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, imgGeneRef, imgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX);
 
                         // Estimated background in gene reference channel
                         double bgEstimated = find_background(imgGeneRef);

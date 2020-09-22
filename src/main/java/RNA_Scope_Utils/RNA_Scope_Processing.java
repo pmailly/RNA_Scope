@@ -12,15 +12,13 @@ import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.measure.Calibration;
+import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.ZProjector;
 import ij.plugin.filter.GaussianBlur;
-import ij.plugin.filter.RankFilters;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
@@ -30,7 +28,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -44,7 +41,9 @@ import mcib3d.image3d.ImageLabeller;
 import mcib3d.image3d.distanceMap3d.EDT;
 import mcib3d.image3d.processing.FastFilters3D;
 import mcib3d.image3d.regionGrowing.Watershed3D;
-import org.apache.tools.ant.taskdefs.WaitFor;
+import mpicbg.ij.integral.RemoveOutliers;
+import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
+import net.haesleinhuepf.clij2.CLIJ2;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -61,8 +60,9 @@ import org.xml.sax.SAXException;
 public class RNA_Scope_Processing {
     
     private static double pixDepth  = 1;
-    
+    public static CLIJ2 clij2 = CLIJ2.getInstance();
 
+    
     /**
      * Dialog ask for channels order
      * @param channels
@@ -120,49 +120,141 @@ public class RNA_Scope_Processing {
     
   /**
      * return objects population in an binary image
-     * @param img
-     * @return pop objects population
+     * Using CLIJ2
+     * @param imgCL
+     * @return pop
      */
 
-    public static  Objects3DPopulation getPopFromImage(ImagePlus img) {
-        // label binary images first
-        ImageLabeller labeller = new ImageLabeller();
-        ImageInt labels = labeller.getLabels(ImageHandler.wrap(img));
+    public static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL) {
+        ClearCLBuffer output = clij2.create(imgCL);
+        clij2.connectedComponentsLabelingBox(imgCL, output);
+        ImagePlus imgLab  = clij2.pull(output);
+        imgLab.setCalibration(cal);
+        ImageInt labels = new ImageLabeller().getLabels(ImageHandler.wrap(imgLab));
         Objects3DPopulation pop = new Objects3DPopulation(labels);
+        clij2.release(output);
         return pop;
+    }  
+    
+    /**
+     * gaussian 3D filter 
+     * Using CLIJ2
+     * @param imgCL
+     * @param sizeX
+     * @param sizeY
+     * @param sizeZ
+     * @return imgOut
+     */
+ 
+    public static ClearCLBuffer gaussianBlur3D(ClearCLBuffer imgCL, double sizeX, double sizeY, double sizeZ) {
+        ClearCLBuffer imgOut = clij2.create(imgCL);
+        clij2.gaussianBlur3D(imgCL, imgOut, sizeX, sizeY, sizeZ);
+        clij2.release(imgCL);
+        return(imgOut);
     }
     
-    
-    /*Median filter 
-     * 
-     * @param img
-     * @param size
+     /**  
+     * median 3D box filter
+     * Using CLIJ2
+     * @param imgCL
+     * @param sizeX
+     * @param sizeY
+     * @param sizeZ
+     * @return imgOut
      */ 
-    public static void median_filter(ImagePlus img, double size) {
-        RankFilters median = new RankFilters();
-        for (int s = 1; s <= img.getNSlices(); s++) {
-            img.setZ(s);
-            median.rank(img.getProcessor(), size, RankFilters.MEDIAN);
-            img.updateAndDraw();
-        }
+    public static ClearCLBuffer medianFilter(ClearCLBuffer imgCL, double sizeX, double sizeY, double sizeZ) {
+        ClearCLBuffer imgIn = clij2.push(imgCL);
+        ClearCLBuffer imgOut = clij2.create(imgIn);
+        clij2.median3DBox(imgIn, imgOut, sizeX, sizeY, sizeZ);
+        clij2.release(imgCL);
+        return(imgOut);
     }
+    
+    /**
+     * Difference of Gaussians 
+     * Using CLIJ2
+     * @param imgCL
+     * @param sizeX1
+     * @param sizeY1
+     * @param sizeZ1
+     * @param sizeX2
+     * @param sizeY2
+     * @param sizeZ2
+     * @return imgGauss
+     */ 
+    public static ClearCLBuffer DOG(ClearCLBuffer imgCL, double sizeX1, double sizeY1, double sizeZ1, double sizeX2, double sizeY2, double sizeZ2) {
+        ClearCLBuffer imgCLDOG = clij2.create(imgCL);
+        clij2.differenceOfGaussian3D(imgCL, imgCLDOG, sizeX1, sizeY1, sizeZ1, sizeX2, sizeY2, sizeZ2);
+        clij2.release(imgCL);
+        return(imgCLDOG);
+    }
+    
+    /**
+     * Fill hole
+     * USING CLIJ2
+     */
+    private static void fillHole(ClearCLBuffer imgCL) {
+        long[] dims = clij2.getDimensions(imgCL);
+        ClearCLBuffer slice = clij2.create(dims[0], dims[1]);
+        ClearCLBuffer slice_filled = clij2.create(slice);
+        for (int z = 0; z < dims[2]; z++) {
+            clij2.copySlice(imgCL, slice, z);
+            clij2.binaryFillHoles(slice, slice_filled);
+            clij2.copySlice(slice_filled, imgCL, z);
+        }
+        clij2.release(slice);
+        clij2.release(slice_filled);
+    }
+    
+  /**
+   * Erode
+   * USING CLIJ2
+   * @param imgCL
+   * @return imgCLOut
+   */
+    private static ClearCLBuffer erode(ClearCLBuffer imgCL) {
+        ClearCLBuffer imgCLOut = clij2.create(imgCL);
+        clij2.erodeBox(imgCL, imgCLOut);
+        clij2.release(imgCL);
+        return(imgCLOut);
+    }
+    
+    /**
+     * Threshold 
+     * USING CLIJ2
+     * @param imgCL
+     * @param thMed
+     * @param fill 
+     */
+    public static ClearCLBuffer threshold(ClearCLBuffer imgCL, String thMed, boolean fill) {
+        ClearCLBuffer imgCLBin = clij2.create(imgCL);
+        clij2.automaticThreshold(imgCL, imgCLBin, thMed);
+        if (fill)
+            fillHole(imgCLBin);
+        return(imgCLBin);
+    }
+    
 
-     /**
+    /**
      * Find gene population
      * @param imgGeneRef
      * @return genePop
      */
     public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef) {
-        ImagePlus img = imgGeneRef.duplicate();
-        median_filter(img, 1);
-        IJ.run(img, "Difference of Gaussians", "  sigma1=2 sigma2=1 stack");
-        Prefs.blackBackground = false;
-        IJ.run(img, "Convert to Mask","method=IsoData background=Dark"); 
-        Objects3DPopulation genePop = getPopFromImage(img);
-        closeImages(img);
+        ImagePlus img = new Duplicator().run(imgGeneRef);
+        ClearCLBuffer imgCL = clij2.push(img);
+        ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
+        clij2.release(imgCL);
+        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 2, 2, 2, 1, 1, 1);
+        clij2.release(imgCLMed);
+        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+        clij2.release(imgCLDOG);
+        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
+        clij2.release(imgCLBin);
         System.out.println(genePop.getNbObjects()+" genes found");
         return(genePop);
     }
+    
     
     /**
      * ramdom color nucleus population
@@ -186,7 +278,7 @@ public class RNA_Scope_Processing {
      * @param imgGeneX
      */
     
-    public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsPop, ImagePlus imgGeneRef, ImagePlus imgGeneX) {
+    public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsRefPop, Objects3DPopulation dotsXPop, ImagePlus imgGeneRef, ImagePlus imgGeneX) {
         IJ.showStatus("Finding cells with gene reference ...");
         ArrayList<Cell> cells = new ArrayList<>();
         ImageHandler imhRef = ImageHandler.wrap(imgGeneRef);
@@ -194,27 +286,28 @@ public class RNA_Scope_Processing {
         int index = 0;
         
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
-            int geneRefDots = 0;
-            double cellVol, geneRefMeanDotsVol;
-            double geneRefMeanInt, geneRefInt;
-            double geneRefDotsInt = 0;
-            double geneRefDotMaxInt = 0;
-            double geneXInt;
+            int geneRefDots = 0, geneXDots = 0;
+            double cellVol, geneRefMeanDotsVol, geneXMeanDotsVol;
+            double geneRefMeanInt, geneRefInt, geneXMeanInt, geneXInt;
+            double geneRefDotsInt = 0, geneXDotsInt = 0;
+            double geneRefDotMaxInt = 0, geneXDotMaxInt = 0;
+            
             // calculate cell parameters
             index++;
             Object3D cellObj = cellsPop.getObject(i);
             cellVol = cellObj.getVolumeUnit();
             geneRefMeanInt = cellObj.getPixMeanValue(imhRef);
+            geneXMeanInt = cellObj.getPixMeanValue(imhX);
             geneRefInt = cellObj.getIntegratedDensity(imhRef);
             geneXInt = cellObj.getIntegratedDensity(imhX);
-            double dotVol = 0;
-            for (int n = 0; n < dotsPop.getNbObjects(); n++) {
+            double dotRefVol = 0, dotXVol = 0;
+            for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
                 // dots parameters
-                Object3D dotObj = dotsPop.getObject(n);
+                Object3D dotObj = dotsRefPop.getObject(n);
                 // find dots inside cell
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
                     geneRefDots++;
-                    dotVol += dotObj.getVolumeUnit();
+                    dotRefVol += dotObj.getVolumeUnit();
                     double dotInt = dotObj.getIntegratedDensity(imhRef);
                     // find dot max intensity
                     if (dotInt > geneRefDotMaxInt)
@@ -222,9 +315,25 @@ public class RNA_Scope_Processing {
                     geneRefDotsInt += dotInt;
                 }
             }
-            geneRefMeanDotsVol = dotVol / geneRefDots;
+            for (int n = 0; n < dotsXPop.getNbObjects(); n++) {
+                // dots parameters
+                Object3D dotObj = dotsXPop.getObject(n);
+                // find dots inside cell
+                if (dotObj.hasOneVoxelColoc(cellObj)) {
+                    geneXDots++;
+                    dotXVol += dotObj.getVolumeUnit();
+                    double dotInt = dotObj.getIntegratedDensity(imhX);
+                    // find dot max intensity
+                    if (dotInt > geneXDotMaxInt)
+                        geneXDotMaxInt = dotInt;
+                    geneXDotsInt += dotInt;
+                }
+            }
+            geneRefMeanDotsVol = dotRefVol / geneRefDots;
+            geneXMeanDotsVol = dotXVol / geneXDots;
             Cell cell = new Cell(index, false, cellVol, geneRefMeanInt, geneRefInt, geneRefDots, geneRefMeanDotsVol,
-                    geneRefDotsInt, geneRefDotMaxInt, geneXInt);
+                    geneRefDotsInt, geneRefDotMaxInt, geneXMeanInt, geneXInt, geneXDots, geneXMeanDotsVol,
+                    geneXDotsInt, geneXDotMaxInt);
             cells.add(cell);
         }
         return(cells);
@@ -255,18 +364,44 @@ public class RNA_Scope_Processing {
     }
     
     /**
+     * Remove Outliers
+     * 
+     * @param img
+     * @param radX
+     * @param radY
+     * @param factor
+     * @return img
+     */
+    public static ImagePlus removeOutliers(ImagePlus img, int radX, int radY, float factor) {
+        
+        for (int i = 0; i < img.getNSlices(); i++) {
+            img.setSlice(i);
+            ImageProcessor ip = img.getProcessor();
+            RemoveOutliers removeOut = new RemoveOutliers(ip.convertToFloatProcessor());
+            removeOut.removeOutliers(radX, radY, factor);
+        }
+        return(img);
+    } 
+    
+    
+    /**
      * Nucleus segmentation 2
      * @param imgNuc
-     * @return 
+     * @return cellPop
      */
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
-        ImagePlus img = imgNuc.duplicate();
-        //IJ.run(img, "Subtract Background...", "rolling=150 stack");
-        ImageStack stack = new ImageStack(imgNuc.getWidth(), imgNuc.getHeight());
-        for (int i = 1; i <= img.getStackSize(); i++) {
+        ImagePlus img = new Duplicator().run(imgNuc);
+        removeOutliers(img, 15, 15, 3);
+        ClearCLBuffer imgCL = clij2.push(imgNuc);
+        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
+        clij2.release(imgCL);
+        ImagePlus imgDOG = clij2.pull(imgCLDOG);
+        clij2.release(imgCLDOG);
+        ImageStack stack = new ImageStack(imgDOG.getWidth(), imgNuc.getHeight());
+        for (int i = 1; i <= imgDOG.getStackSize(); i++) {
             img.setZ(i);
             img.updateAndDraw();
-            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Triangle outlier_radius=15 outlier_threshold=1 max_nucleus_size=500 "
+            IJ.run(img, "Nuclei Outline", "blur=0 blur2=0 threshold_method=Triangle outlier_radius=0 outlier_threshold=1 max_nucleus_size=500 "
                     + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
             img.setZ(1);
             img.updateAndDraw();
@@ -510,8 +645,9 @@ public class RNA_Scope_Processing {
         output_detail_Analyze = new BufferedWriter(fwAnalyze_detail);
         // write results headers
         output_detail_Analyze.write("Image Name\t#Cell\tCell Vol\tCell negative\tIntegrated intensity in gene ref. channel\tMean intensity in gene ref. channel\t"
-                + "Integrated intensity in gene X channel\tNb gene ref. dots\tMean gene ref. dots volume\tSum of dots ref. integrated intensity\t"
-                + "Max of dots ref. integrated intensity\tNegative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
+                + "Nb gene ref. dots\tMean gene ref. dots volume\tIntegrated intensity of dots ref.channel\tMax of dots ref. integrated intensity\t"
+                + "Integrated intensity in gene X channel\tMean intensity in gene X channel\tNb gene X dots\tMean gene X dots volume\tIntegrated intensity of dots X\t"
+                + "Max of dots X integrated intensity\tNegative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
                 + "\tEstimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
         output_detail_Analyze.flush();
     }

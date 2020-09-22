@@ -106,7 +106,7 @@ public class RNA_Scope_Local implements PlugIn {
                             cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();
                             cal.pixelHeight = cal.pixelWidth;
                             // problem to read calibration with nd files
-                            if ((meta.getPixelsPhysicalSizeZ(0) == null) || (cal.pixelWidth == 1))
+                            if ((meta.getPixelsPhysicalSizeZ(0) == null))
                                 showCal = true;
                             else
                                 cal.pixelDepth = meta.getPixelsPhysicalSizeZ(0).value().doubleValue();
@@ -159,10 +159,12 @@ public class RNA_Scope_Local implements PlugIn {
 
                         // Find gene reference dots
                         Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
-
+                        
+                        //Find gene X dots 
+                        Objects3DPopulation geneXDots = findGenePop(imgGeneX);
 
                          // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, imgGeneRef, imgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX);
 
                         // Estimated background in gene reference and gene X channel
                         double bgGeneRefEstimated = find_background(imgGeneRef);
@@ -189,9 +191,11 @@ public class RNA_Scope_Local implements PlugIn {
                         // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
                             output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getNegative()
-                                    +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneXInt()+"\t"+
-                                    listCells.get(n).getGeneRefDots()+"\t"+listCells.get(n).getGeneRefMeanDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+
-                                    listCells.get(n).getGeneRefDotMaxInt()+"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
+                                    +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneRefDots()
+                                    +"\t"+listCells.get(n).getGeneRefMeanDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+listCells.get(n).getGeneRefDotMaxInt()
+                                    +"\t"+listCells.get(n).getGeneXInt()+"\t"+listCells.get(n).getGeneXMeanInt()+"\t"+listCells.get(n).getGeneXDots()
+                                    +"\t"+listCells.get(n).getGeneXMeanDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotMaxInt()
+                                    +"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
                             output_detail_Analyze.flush();
                         }
 

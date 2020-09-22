@@ -16,6 +16,8 @@ public class Cell {
     private boolean negative;
     // volume
     private double cellVol;
+    
+    // Reference channel
     // mean intensity in gene reference channel
     private double geneRefMeanInt;
     // integrated intensity in gene reference channel
@@ -28,12 +30,25 @@ public class Cell {
     private double geneRefDotsInt;
     // max integrated intensity of gene reference dots
     private double geneRefDotMaxInt;
+    
+    // Gene X channel
+    // mean intensity in gene X channel
+    private double geneXMeanInt;
     // integrated intensity in gene X channel
     private double geneXInt;
+    // gene X dot number
+    private int geneXDots;
+    // mean dots volume
+    private double geneXMeanDotsVol;
+    // integrated intensity of total gene X dots
+    private double geneXDotsInt;
+    // max integrated intensity of gene X dots
+    private double geneXDotMaxInt;
    
 	
 	public Cell(int index, boolean negative, double cellVol, double geneRefMeanInt, double geneRefInt, int geneRefDots, double geneRefMeanDotsVol,
-                double geneRefDotsInt, double geneRefDotMaxInt, double geneXInt) {
+                double geneRefDotsInt, double geneRefDotMaxInt, double geneXMeanInt, double geneXInt, int geneXDots, double geneXMeanDotsVol,
+                double geneXDotsInt, double geneXDotMaxInt) {
             this.index = index;
             this.negative = negative;
             this.cellVol = cellVol;
@@ -43,7 +58,12 @@ public class Cell {
             this.geneRefMeanDotsVol = geneRefMeanDotsVol;
             this.geneRefDotsInt = geneRefDotsInt;
             this.geneRefDotMaxInt = geneRefDotMaxInt;
+            this.geneXMeanInt = geneXMeanInt;
             this.geneXInt = geneXInt;
+            this.geneXDots = geneXDots;
+            this.geneXMeanDotsVol = geneXMeanDotsVol;
+            this.geneXDotsInt = geneXDotsInt;
+            this.geneXDotMaxInt = geneXDotMaxInt;
 	}
         
         public void setIndex(int index) {
@@ -82,9 +102,29 @@ public class Cell {
             this.geneRefDotMaxInt = geneRefDotMaxInt;
         }
         
+        public void setGeneXMeanInt(double geneXMeanInt) {
+            this.geneXMeanInt = geneXMeanInt;
+	}
+        
         public void setGeneXInt(double geneXInt) {
             this.geneXInt = geneXInt;
 	}
+        
+        public void setGeneXDots(int geneXDots) {
+            this.geneXDots = geneXDots;
+        }
+        
+        public void setGeneXMeanDotsVol(double geneXMeanDotsVol) {
+            this.geneXMeanDotsVol = geneXMeanDotsVol;
+        }
+        
+        public void setGeneXDotsInt(double geneXDotsInt) {
+            this.geneXDotsInt = geneXDotsInt;
+        }
+        
+        public void setGeneXDotsMaxInt(double geneXDotMaxInt) {
+            this.geneXDotMaxInt = geneXDotMaxInt;
+        }
         
         
         public int getIndex() {
@@ -123,8 +163,28 @@ public class Cell {
             return geneRefDotMaxInt;
         }
         
+        public double getGeneXMeanInt() {
+            return geneXMeanInt;
+        }
+        
         public double getGeneXInt() {
             return geneXInt;
 	}
+        
+	public int getGeneXDots() {
+            return geneXDots;
+	}
+        
+        public double getGeneXMeanDotsVol() {
+            return geneXMeanDotsVol;
+        }
+        
+        public double getGeneXDotsInt() {
+            return geneXDotsInt;
+        }
+        
+        public double getGeneXDotMaxInt() {
+            return geneXDotMaxInt;
+        }
         
 }
