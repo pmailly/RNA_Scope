@@ -190,11 +190,11 @@ public class RNA_Scope_Local implements PlugIn {
 
                         // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
-                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getNegative()
+                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellVolUnit()+"\t"+listCells.get(n).getNegative()
                                     +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneRefDots()
-                                    +"\t"+listCells.get(n).getGeneRefMeanDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+listCells.get(n).getGeneRefDotMaxInt()
+                                    +"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsVolUnit()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+listCells.get(n).getGeneRefDotsMeanInt()
                                     +"\t"+listCells.get(n).getGeneXInt()+"\t"+listCells.get(n).getGeneXMeanInt()+"\t"+listCells.get(n).getGeneXDots()
-                                    +"\t"+listCells.get(n).getGeneXMeanDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotMaxInt()
+                                    +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsVolUnit()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotsMeanInt()
                                     +"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
                             output_detail_Analyze.flush();                       
 

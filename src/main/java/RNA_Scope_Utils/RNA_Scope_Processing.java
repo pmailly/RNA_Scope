@@ -289,53 +289,51 @@ public class RNA_Scope_Processing {
         
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             int geneRefDots = 0, geneXDots = 0;
-            double cellVol, geneRefMeanDotsVol, geneXMeanDotsVol;
+            double cellVol, cellVolUnit, geneRefMeanDotsVol, geneXMeanDotsVol;
             double geneRefMeanInt, geneRefInt, geneXMeanInt, geneXInt;
             double geneRefDotsInt = 0, geneXDotsInt = 0;
-            double geneRefDotMaxInt = 0, geneXDotMaxInt = 0;
+            double geneRefDotsMeanInt = 0, geneXDotsMeanInt = 0;
             
             // calculate cell parameters
             index++;
             Object3D cellObj = cellsPop.getObject(i);
-            cellVol = cellObj.getVolumeUnit();
+            cellVol = cellObj.getVolumePixels();
+            cellVolUnit = cellObj.getVolumeUnit();
             geneRefMeanInt = cellObj.getPixMeanValue(imhRef);
             geneXMeanInt = cellObj.getPixMeanValue(imhX);
             geneRefInt = cellObj.getIntegratedDensity(imhRef);
             geneXInt = cellObj.getIntegratedDensity(imhX);
-            double dotRefVol = 0, dotXVol = 0;
+            double dotsRefVol = 0, dotsRefVolUnit = 0, dotsXVol = 0, dotsXVolUnit = 0;
+            // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
-                // dots parameters
                 Object3D dotObj = dotsRefPop.getObject(n);
                 // find dots inside cell
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
                     geneRefDots++;
-                    dotRefVol += dotObj.getVolumeUnit();
-                    double dotInt = dotObj.getIntegratedDensity(imhRef);
-                    // find dot max intensity
-                    if (dotInt > geneRefDotMaxInt)
-                        geneRefDotMaxInt = dotInt;
-                    geneRefDotsInt += dotInt;
+                    dotsRefVolUnit += dotObj.getVolumeUnit();
+                    dotsRefVol += dotObj.getVolumePixels();
+                    geneRefDotsInt += dotObj.getIntegratedDensity(imhRef);
+                    geneRefDotsMeanInt += dotObj.getPixMeanValue(imhRef);
                 }
             }
+            geneRefDotsMeanInt = geneRefDotsMeanInt/geneRefDots;
+            
+            // X dots parameters
             for (int n = 0; n < dotsXPop.getNbObjects(); n++) {
-                // dots parameters
                 Object3D dotObj = dotsXPop.getObject(n);
                 // find dots inside cell
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
                     geneXDots++;
-                    dotXVol += dotObj.getVolumeUnit();
-                    double dotInt = dotObj.getIntegratedDensity(imhX);
-                    // find dot max intensity
-                    if (dotInt > geneXDotMaxInt)
-                        geneXDotMaxInt = dotInt;
-                    geneXDotsInt += dotInt;
+                    dotsXVol += dotObj.getVolumePixels();
+                    dotsXVolUnit += dotObj.getVolumeUnit();
+                    geneXDotsInt += dotObj.getIntegratedDensity(imhX);
+                    geneXDotsMeanInt += dotObj.getPixMeanValue(imhRef);
                 }
             }
-            geneRefMeanDotsVol = dotRefVol / geneRefDots;
-            geneXMeanDotsVol = dotXVol / geneXDots;
-            Cell cell = new Cell(index, false, cellVol, geneRefMeanInt, geneRefInt, geneRefDots, geneRefMeanDotsVol,
-                    geneRefDotsInt, geneRefDotMaxInt, geneXMeanInt, geneXInt, geneXDots, geneXMeanDotsVol,
-                    geneXDotsInt, geneXDotMaxInt);
+            geneXDotsMeanInt = geneRefDotsMeanInt/geneXDots;
+            
+            Cell cell = new Cell(index, false, cellVol, cellVolUnit, geneRefMeanInt, geneRefInt, geneRefDots, dotsRefVol, dotsRefVolUnit,
+                    geneRefDotsInt, geneRefDotsMeanInt, geneXMeanInt, geneXInt, geneXDots, dotsXVol, dotsXVolUnit,geneXDotsInt, geneXDotsMeanInt);
             cells.add(cell);
         }
         return(cells);
@@ -682,10 +680,10 @@ public class RNA_Scope_Processing {
         FileWriter  fwAnalyze_detail = new FileWriter(outDirResults + "detailed_results.xls",false);
         output_detail_Analyze = new BufferedWriter(fwAnalyze_detail);
         // write results headers
-        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol\tCell negative\tIntegrated intensity in gene ref. channel\tMean intensity in gene ref. channel\t"
-                + "Nb gene ref. dots\tMean gene ref. dots volume\tIntegrated intensity of dots ref.channel\tMax of dots ref. integrated intensity\t"
-                + "Integrated intensity in gene X channel\tMean intensity in gene X channel\tNb gene X dots\tMean gene X dots volume\tIntegrated intensity of dots X\t"
-                + "Max of dots X integrated intensity\tNegative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
+        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Vol (µm3)\tCell negative\t"
+                + "Integrated intensity in gene ref. channel\tMean intensity in gene ref. channel\tNb gene ref. dots\tDots ref. volume (pixel3)\tDots ref. volume (µm3)\tIntegrated intensity of dots ref. channel\tMean of dots ref. intensity\t"
+                + "Integrated intensity in gene X channel\tMean intensity in gene X channel\tNb gene X dots\tDots X volume (pixel3)\tDots X volume (µm3)\tIntegrated intensity of dots X channel\tMean of dots X intensity\t"
+                + "Negative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
                 + "\tEstimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
         output_detail_Analyze.flush();
     }

@@ -9,6 +9,7 @@ import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.imageExt;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
 import static RNA_Scope_Utils.JDialogOmeroConnect.selectedDataset;
@@ -153,8 +154,9 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX);
 
-                        // Estimated background in gene reference channel
-                        double bgEstimated = find_background(imgGeneRef);
+                         // Estimated background in gene reference and gene X channel
+                        double bgGeneRefEstimated = find_background(imgGeneRef);
+                        double bgGeneXEstimated = find_background(imgGeneX);
 
                         // find intensity in gene reference for negative cell
 
@@ -180,13 +182,16 @@ public class RNA_Scope_Omero implements PlugIn {
                             }
                         }
 
-                        // write results for each cell population
+                      // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
-                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getNegative()
-                                    +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneXInt()+"\t"+
-                                    listCells.get(n).getGeneRefDots()+"\t"+listCells.get(n).getGeneRefMeanDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+
-                                    listCells.get(n).getGeneRefDotMaxInt()+"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgEstimated+"\n");
-                            output_detail_Analyze.flush();
+                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellVolUnit()+"\t"+listCells.get(n).getNegative()
+                                    +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneRefDots()
+                                    +"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsVolUnit()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+listCells.get(n).getGeneRefDotsMeanInt()
+                                    +"\t"+listCells.get(n).getGeneXInt()+"\t"+listCells.get(n).getGeneXMeanInt()+"\t"+listCells.get(n).getGeneXDots()
+                                    +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsVolUnit()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotsMeanInt()
+                                    +"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
+                            output_detail_Analyze.flush();                        
+
                         }
 
                         // Save labelled nucleus
