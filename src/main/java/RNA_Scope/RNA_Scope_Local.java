@@ -196,38 +196,23 @@ public class RNA_Scope_Local implements PlugIn {
                                     +"\t"+listCells.get(n).getGeneXInt()+"\t"+listCells.get(n).getGeneXMeanInt()+"\t"+listCells.get(n).getGeneXDots()
                                     +"\t"+listCells.get(n).getGeneXMeanDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotMaxInt()
                                     +"\t"+negativeCellParams[0]+"\t"+negativeCellParams[1]+"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
-                            output_detail_Analyze.flush();
+                            output_detail_Analyze.flush();                       
+
                         }
 
 
-                        // save image for objects population
-                        // red geneRef , green geneX, blue nucDilpop
-                        ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
-                        imgCells.setCalibration(cal);
-                        ImageHandler imgNegCells = ImageHandler.wrap(imgNuc).createSameDimensions();
-                        imgNegCells.setCalibration(cal);
-                        ImagePlus imgCellLabels = ImageHandler.wrap(imgNuc).createSameDimensions().getImagePlus();
-                        // draw nucleus population
-                        cellsPop.draw(imgCells, 255);
-                        drawNegCells(cellsPop, imgNegCells);
-                        labelsObject(cellsPop, imgCellLabels);
-                        ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
-                        ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
-                        imgObjects.setCalibration(cal);
-                        IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
-                        FileSaver ImgObjectsFile = new FileSaver(imgObjects);
-                        ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_Objects.tif"); 
-                        imgCells.closeImagePlus();
-                        // save single color nucleus population
-                        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
-                        FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
-                        ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
-
+                         // Save labelled nucleus
+                        saveNucleusLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
+                        
+                         // save random color nucleus popualation
+                        saveNucleus(imgNuc, cellsPop, outDirResults, rootName);
+                        
+                        // save dots segmented objects
+                        saveDotsImage (imgNuc, cellsPop, geneRefDots, geneXDots, outDirResults, rootName);
+                       
                         closeImages(imgNuc);
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
-                        closeImages(imgObjects);
-                        closeImages(imgCellLabels);
                     }
                 }
                 output_detail_Analyze.close();

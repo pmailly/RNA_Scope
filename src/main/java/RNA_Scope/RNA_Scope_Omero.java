@@ -31,6 +31,9 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.find_negativeCell;
 import static RNA_Scope_Utils.RNA_Scope_Processing.labelsObject;
 import static RNA_Scope_Utils.RNA_Scope_Processing.colorPop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.readXML;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleus;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleusLabelledImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
 import ij.ImagePlus;
@@ -186,46 +189,31 @@ public class RNA_Scope_Omero implements PlugIn {
                             output_detail_Analyze.flush();
                         }
 
-
-                        // save image for objects population
-                        // red geneRef , green geneX, blue nucDilpop
-                        ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
-                        imgCells.setCalibration(cal);
-                        ImageHandler imgNegCells = ImageHandler.wrap(imgNuc).createSameDimensions();
-                        imgNegCells.setCalibration(cal);
-                        ImagePlus imgCellLabels = ImageHandler.wrap(imgNuc).createSameDimensions().getImagePlus();
-                        // draw nucleus population
-                        cellsPop.draw(imgCells, 255);
-                        drawNegCells(cellsPop, imgNegCells);
-                        labelsObject(cellsPop, imgCellLabels);
-                        ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
-                        ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
-                        imgObjects.setCalibration(cal);
-                        IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
-
-                        // Save images
-                        FileSaver ImgObjectsFile = new FileSaver(imgObjects);
-                        ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_Objects.tif");
-                        imgCells.closeImagePlus();
+                        // Save labelled nucleus
+                        saveNucleusLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
 
                         // import  to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Objects.tif", true);
                         new File(outDirResults + rootName + "_Objects.tif").delete();
 
                         // save random color nucleus popualation
-                        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
-                        FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
-                        ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
+                        saveNucleus(imgNuc, cellsPop, outDirResults, rootName);
 
                         // import to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Nucleus-ColorObjects.tif", true);
                         new File(outDirResults + rootName + "_Nucleus-ColorObjects.tif").delete();
+                        
+                        // save dots segmentations
+                        saveDotsImage (imgNuc, cellsPop, geneRefDots, geneXDots, outDirResults, rootName);
+                        
+                        // import to Omero server
+                        OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_DotsObjects.tif", true);
+                        new File(outDirResults + rootName + "_DotsObjects.tif").delete();
 
                         closeImages(imgNuc);
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
-                        closeImages(imgObjects);
-                        closeImages(imgCellLabels);
+                        
 
                     } catch (DSOutOfServiceException | ExecutionException | DSAccessException | ParserConfigurationException | SAXException | IOException ex) {
                         Logger.getLogger(RNA_Scope_Omero.class.getName()).log(Level.SEVERE, null, ex);
