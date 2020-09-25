@@ -14,9 +14,11 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.Roi;
+import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
+import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
 import ij.plugin.filter.GaussianBlur;
 import ij.plugin.frame.RoiManager;
@@ -245,7 +247,7 @@ public class RNA_Scope_Processing {
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
-        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 2, 2, 2, 1, 1, 1);
+        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
         clij2.release(imgCLMed);
         ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
         clij2.release(imgCLDOG);
@@ -263,8 +265,9 @@ public class RNA_Scope_Processing {
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
         imgObj.setCalibration(img.getCalibration());
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
+            int color = (int)(Math.random() * (255 - 1 + 1) + 1);
             Object3D obj = cellsPop.getObject(i);
-            obj.draw(imgObj, (i+1));
+            obj.draw(imgObj, (color));
         } 
         return(imgObj.getImagePlus());
     } 
@@ -391,11 +394,6 @@ public class RNA_Scope_Processing {
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
         ImagePlus img = new Duplicator().run(imgNuc);
         IJ.run(img, "Remove Outliers", "block_radius_x=50 block_radius_y=50 standard_deviations=1 stack");
-//        ClearCLBuffer imgCL = clij2.push(imgNuc);
-//        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
-//        clij2.release(imgCL);
-//        ImagePlus imgDOG = clij2.pull(imgCLDOG);
-//        clij2.release(imgCLDOG);
         IJ.run(img, "Difference of Gaussians", "  sigma1=30 sigma2=10 stack");
         ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
         for (int i = 1; i <= img.getStackSize(); i++) {
@@ -423,7 +421,47 @@ public class RNA_Scope_Processing {
         return(cellPop);
     }
     
-    
+//      /**
+//     * Nucleus segmentation 2 old version
+//     * @param imgNuc
+//     * @return 
+//     * @return cellPop
+//     */
+//    public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
+//        ImagePlus img = new Duplicator().run(imgNuc);
+//        removeOutliers(img, 15, 15, 3);
+//        ClearCLBuffer imgCL = clij2.push(imgNuc);
+//        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
+//        clij2.release(imgCL);
+//        ImagePlus imgDOG = clij2.pull(imgCLDOG);
+//        clij2.release(imgCLDOG);
+//        ImageStack stack = new ImageStack(imgDOG.getWidth(), imgNuc.getHeight());
+//        for (int i = 1; i <= imgDOG.getStackSize(); i++) {
+//            imgDOG.setZ(i);
+//            imgDOG.updateAndDraw();
+//            IJ.run(imgDOG, "Nuclei Outline", "blur=0 blur2=0 threshold_method=Triangle outlier_radius=0 outlier_threshold=1 max_nucleus_size=500 "
+//                    + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
+//            imgDOG.setZ(1);
+//            imgDOG.updateAndDraw();
+//            ImagePlus mask = new ImagePlus("mask", imgDOG.createRoiMask().getBufferedImage());
+//            ImageProcessor ip =  mask.getProcessor();
+//            ip.invertLut();
+//            for (int n = 0; n < 3; n++) 
+//                ip.erode();
+//            stack.addSlice(ip);
+//        }
+//        ImagePlus imgStack = new ImagePlus("Nucleus", stack);
+//        ImagePlus imgWater = WatershedSplit(imgStack, 8);
+//        closeImages(imgStack);
+//        imgWater.setCalibration(imgNuc.getCalibration());
+//        Objects3DPopulation cellPop = new Objects3DPopulation(imgWater);
+//        cellPop.removeObjectsTouchingBorders(imgWater, false);
+//        closeImages(imgWater);
+//        closeImages(imgDOG);
+//        return(cellPop);
+//    }
+            
+            
     /**
      * Nucleus segmentation 3
      * @param imgNuc
@@ -652,6 +690,83 @@ public class RNA_Scope_Processing {
         output_detail_Analyze.flush();
     }
     
+    /**
+     * Save nucleus with random colors
+     * @param imgNuc
+     * @param cellsPop
+     * @param outDirResults
+     * @param rootName
+     */
+    public static void saveNucleus (ImagePlus imgNuc, Objects3DPopulation cellsPop, String outDirResults, String rootName) {
+        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
+        IJ.run(imgColorPop, "3-3-2 RGB", "");
+        FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
+        ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
+        closeImages(imgColorPop);
+    }
     
     
+    /**
+     * save images objects population
+     * @param imgNuc
+     * @param cellsPop
+     * @param imgGeneRef
+     * @param imgGeneX
+     * @param outDirResults
+     * @param rootName
+     */
+    public static void saveNucleusLabelledImage (ImagePlus imgNuc, Objects3DPopulation cellsPop, ImagePlus imgGeneRef, ImagePlus imgGeneX,
+            String outDirResults, String rootName) {
+        // red geneRef , green geneX, blue nucDilpop
+        ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImageHandler imgNegCells = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImagePlus imgCellLabels = ImageHandler.wrap(imgNuc).createSameDimensions().getImagePlus();
+        // draw nucleus population
+        cellsPop.draw(imgCells, 255);
+        drawNegCells(cellsPop, imgNegCells);
+        labelsObject(cellsPop, imgCellLabels);
+        ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
+        ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
+        imgObjects.setCalibration(cal);
+        IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
+
+        // Save images
+        FileSaver ImgObjectsFile = new FileSaver(imgObjects);
+        ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_Objects.tif");
+        imgCells.closeImagePlus();
+        imgNegCells.closeImagePlus();
+        closeImages(imgCellLabels);
+    }
+    
+    /**
+     * save images objects population
+     * @param imgNuc
+     * @param cellsPop
+     * @param imgGeneRef
+     * @param imgGeneX
+     * @param outDirResults
+     * @param rootName
+     */
+    public static void saveDotsImage (ImagePlus imgNuc, Objects3DPopulation cellsPop, Objects3DPopulation geneRefPop, Objects3DPopulation geneXPop,
+            String outDirResults, String rootName) {
+        // red dots geneRef , dots green geneX, blue nucDilpop
+        ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImageHandler imgDotsGeneRef = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImageHandler imgDotsGeneX = ImageHandler.wrap(imgNuc).createSameDimensions();
+        // draw nucleus dots population
+        cellsPop.draw(imgCells, 255);
+        geneRefPop.draw(imgDotsGeneRef, 255);
+        geneXPop.draw(imgDotsGeneX, 255);
+        ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), imgCells.getImagePlus()};
+        ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
+        imgObjects.setCalibration(cal);
+        IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
+
+        // Save images
+        FileSaver ImgObjectsFile = new FileSaver(imgObjects);
+        ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_DotsObjects.tif");
+        imgCells.closeImagePlus();
+        imgDotsGeneRef.closeImagePlus();
+        imgDotsGeneX.closeImagePlus();
+    }
 }
