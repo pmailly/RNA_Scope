@@ -391,13 +391,12 @@ public class RNA_Scope_Processing {
      */
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
         ImagePlus img = new Duplicator().run(imgNuc);
-        IJ.run(img, "Remove Outliers", "block_radius_x=50 block_radius_y=50 standard_deviations=1 stack");
-        IJ.run(img, "Difference of Gaussians", "  sigma1=30 sigma2=10 stack");
         ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
         for (int i = 1; i <= img.getStackSize(); i++) {
+            IJ.showStatus("Findingnucleus section "+i+" / "+img.getStackSize());
             img.setZ(i);
             img.updateAndDraw();
-            IJ.run(img, "Nuclei Outline", "blur=0 blur2=0 threshold_method=Triangle outlier_radius=0 outlier_threshold=1 max_nucleus_size=500 "
+            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Triangle outlier_radius=15 outlier_threshold=1 max_nucleus_size=500 "
                     + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
             img.setZ(1);
             img.updateAndDraw();
@@ -683,8 +682,7 @@ public class RNA_Scope_Processing {
         output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Vol (µm3)\tCell negative\t"
                 + "Integrated intensity in gene ref. channel\tMean intensity in gene ref. channel\tNb gene ref. dots\tDots ref. volume (pixel3)\tDots ref. volume (µm3)\tIntegrated intensity of dots ref. channel\tMean of dots ref. intensity\t"
                 + "Integrated intensity in gene X channel\tMean intensity in gene X channel\tNb gene X dots\tDots X volume (pixel3)\tDots X volume (µm3)\tIntegrated intensity of dots X channel\tMean of dots X intensity\t"
-                + "Negative cell mean intensity in gene ref. channel\tNegative cell integrated intensity in gene ref. channel"
-                + "\tEstimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
+                + "Estimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
         output_detail_Analyze.flush();
     }
     

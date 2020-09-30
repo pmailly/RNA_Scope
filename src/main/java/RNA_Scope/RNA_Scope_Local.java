@@ -13,7 +13,6 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.*;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.io.FileSaver;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -30,16 +29,11 @@ import loci.formats.services.OMEXMLService;
 import loci.plugins.util.ImageProcessorReader;
 import loci.plugins.BF;
 import ij.plugin.PlugIn;
-import ij.plugin.RGBStackMerge;
 import ij.plugin.frame.RoiManager;
 import java.util.ArrayList;
-import javax.xml.parsers.ParserConfigurationException;
 import loci.plugins.in.ImporterOptions;
 import mcib3d.geom.Objects3DPopulation;
-import mcib3d.geom.Point3D;
-import mcib3d.image3d.ImageHandler;
 import org.apache.commons.lang.ArrayUtils;
-import org.xml.sax.SAXException;
 
 
 /*
