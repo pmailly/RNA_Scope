@@ -606,8 +606,8 @@ public class RNA_Scope_Processing {
      * @param popObj
      * @param img 
      */
-    public static void labelsObject (Objects3DPopulation popObj, ImagePlus img) {
-        Font tagFont = new Font("SansSerif", Font.PLAIN, 24);
+    public static void labelsObject (Objects3DPopulation popObj, ImagePlus img, int fontSize) {
+        Font tagFont = new Font("SansSerif", Font.PLAIN, fontSize);
         String name;
         for (int n = 0; n < popObj.getNbObjects(); n++) {
             Object3D obj = popObj.getObject(n);
@@ -720,7 +720,7 @@ public class RNA_Scope_Processing {
         // draw nucleus population
         cellsPop.draw(imgCells, 255);
         drawNegCells(cellsPop, imgNegCells);
-        labelsObject(cellsPop, imgCellLabels);
+        labelsObject(cellsPop, imgCellLabels, 24);
         ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
         ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
         imgObjects.setCalibration(cal);
