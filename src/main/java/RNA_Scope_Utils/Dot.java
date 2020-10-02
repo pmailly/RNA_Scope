@@ -17,10 +17,10 @@ public class Dot {
     private double corIntDot;
     private int zMin;
     private int zMax;
-    private int zCenter;
+    private double zCenter;
    
 	
-	public Dot(int index, int volDot, double bgIntDot, double intDot, double corIntDot, int zMin, int zMax, int zCenter) {
+	public Dot(int index, int volDot, double bgIntDot, double intDot, double corIntDot, int zMin, int zMax, double zCenter) {
             this.index = index;
             this.volDot = volDot;
             this.bgIntDot = bgIntDot;
@@ -59,7 +59,7 @@ public class Dot {
 		this.zMax = zMax;
 	}
         
-        public void setZCenter(int zCenter) {
+        public void setZCenter(double zCenter) {
 		this.zCenter = zCenter;
 	}
         
@@ -91,7 +91,7 @@ public class Dot {
 		return zMax;
 	}
 
-        public int getZCenter() {
+        public double getZCenter() {
 		return zCenter;
 	}
 }

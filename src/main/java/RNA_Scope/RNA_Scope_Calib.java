@@ -84,7 +84,7 @@ private static BufferedWriter output_dotCalib;
                 Object3D dotObj = dotsPop.getObject(i);
                 if(dotObj.inside(pt.getRoundX(), pt.getRoundY(), pt.getRoundZ())) {
                     Dot dot = new Dot(index, dotObj.getVolumePixels(), 0, dotObj.getIntegratedDensity(imh), 0, dotObj.getZmin(), dotObj.getZmax(),
-                    dotObj.getZmax() - dotObj.getZmin());
+                    dotObj.getCenterZ());
                     dots.add(dot);
                     pointedDotsPop.addObject(dotObj);
                     dotsPop.removeObject(dotObj);
@@ -185,7 +185,7 @@ private static BufferedWriter output_dotCalib;
                         output_dotCalib = new BufferedWriter(fwAnalyze_detail);
                         // write results headers
                         output_dotCalib.write("Image Name\t#Dot\tDot Vol (pixel3)\tDot Integrated Intensity\tMean Dot Background intensity\t"
-                                + "Corrected Dots Integrated Intensity\tDot Z center\n");
+                                + "Corrected Dots Integrated Intensity\tDot Z center\tDot Z range\n");
                         output_dotCalib.flush();
                     }
                     
@@ -237,7 +237,7 @@ private static BufferedWriter output_dotCalib;
                             dot.setCorIntDot(dot.getIntDot() - (bgDotInt * dot.getvolDot()));
                             // write results
                             output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getvolDot()+"\t"+dot.getIntDot()+"\t"+dot.getBgIntDot()+"\t"+dot.getCorIntDot()+
-                                    "\t"+dot.getZCenter()+"\n");
+                                    "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
                             output_dotCalib.flush();
                         }
                     }

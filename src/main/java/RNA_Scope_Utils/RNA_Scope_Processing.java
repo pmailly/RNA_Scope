@@ -20,7 +20,6 @@ import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
-import ij.plugin.filter.GaussianBlur;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
