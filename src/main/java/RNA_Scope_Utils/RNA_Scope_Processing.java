@@ -1,13 +1,14 @@
 package RNA_Scope_Utils;
 
 
-import static RNA_Scope.RNA_Scope.adult;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.maxNucVol;
 import static RNA_Scope.RNA_Scope.minNucVol;
 import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
+import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
@@ -20,7 +21,6 @@ import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
-import ij.plugin.filter.GaussianBlur;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
@@ -85,8 +85,9 @@ public class RNA_Scope_Processing {
         gd.addNumericField("Max Volume size : ", maxNucVol, 2);
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
-        gd.setInsets(0, 120, 0);
-        gd.addCheckbox("Nucleus detection adult", false);
+        gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
+        gd.addNumericField("Gene reference single dot intensity : ", singleDotIntGeneRef, 0);
+        gd.addNumericField("Gene X single dot intensity : ", singleDotIntGeneX, 0);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
             gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
@@ -100,7 +101,8 @@ public class RNA_Scope_Processing {
         maxNucVol = gd.getNextNumber();
         nucDil = (float)gd.getNextNumber();
         removeSlice = (int)gd.getNextNumber();
-        adult = gd.getNextBoolean();
+        singleDotIntGeneRef = gd.getNextNumber();
+        singleDotIntGeneX = gd.getNextNumber();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
             cal.pixelDepth = gd.getNextNumber();
@@ -209,14 +211,14 @@ public class RNA_Scope_Processing {
     }
     
   /**
-   * Erode
+   * Open
    * USING CLIJ2
    * @param imgCL
    * @return imgCLOut
    */
-    private static ClearCLBuffer erode(ClearCLBuffer imgCL) {
+    private static ClearCLBuffer open(ClearCLBuffer imgCL) {
         ClearCLBuffer imgCLOut = clij2.create(imgCL);
-        clij2.erodeBox(imgCL, imgCLOut);
+        clij2.openingBox(imgCL, imgCLOut, 1);
         clij2.release(imgCL);
         return(imgCLOut);
     }
@@ -251,8 +253,10 @@ public class RNA_Scope_Processing {
         clij2.release(imgCLMed);
         ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
         clij2.release(imgCLDOG);
-        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
+        ClearCLBuffer imgCLBinOpen = open(imgCLBin); 
         clij2.release(imgCLBin);
+        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBinOpen);
+        clij2.release(imgCLBinOpen);        
         return(genePop);
     }
     
@@ -341,11 +345,7 @@ public class RNA_Scope_Processing {
     
     public static  Objects3DPopulation findNucleus(ImagePlus imgNuc) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
-        if (adult)
-            nucPopOrg = find_nucleus2(imgNuc);
-        else
-            nucPopOrg = find_nucleus3(imgNuc);
-
+        nucPopOrg = find_nucleus2(imgNuc);
         System.out.println("-- Total nucleus Population :"+nucPopOrg.getNbObjects());
         // size filter
         Objects3DPopulation nucPop = new Objects3DPopulation(nucPopOrg.getObjectsWithinVolume(minNucVol, maxNucVol, true));
@@ -393,7 +393,7 @@ public class RNA_Scope_Processing {
         ImagePlus img = new Duplicator().run(imgNuc);
         ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
         for (int i = 1; i <= img.getStackSize(); i++) {
-            IJ.showStatus("Findingnucleus section "+i+" / "+img.getStackSize());
+            IJ.showStatus("Finding nucleus section "+i+" / "+img.getStackSize());
             img.setZ(i);
             img.updateAndDraw();
             IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Triangle outlier_radius=15 outlier_threshold=1 max_nucleus_size=500 "
@@ -408,6 +408,7 @@ public class RNA_Scope_Processing {
             stack.addSlice(ip);
         }
         ImagePlus imgStack = new ImagePlus("Nucleus", stack);
+        IJ.showStatus("Starting watershed...");
         ImagePlus imgWater = WatershedSplit(imgStack, 8);
         closeImages(imgStack);
         imgWater.setCalibration(imgNuc.getCalibration());
@@ -458,32 +459,6 @@ public class RNA_Scope_Processing {
 //        return(cellPop);
 //    }
             
-            
-    /**
-     * Nucleus segmentation 3
-     * @param imgNuc
-     * @return 
-     */
-    public static Objects3DPopulation find_nucleus3(ImagePlus imgNuc) {
-        ImagePlus img = imgNuc.duplicate();
-        img.setTitle("Nucleus");
-        IJ.run(img, "Subtract Background...", "rolling=150 stack");
-        IJ.run(img, "Remove Outliers...", "radius=15 threshold=1 which=Bright stack");
-        IJ.run(img, "Difference of Gaussians", "  sigma1=20 sigma2=15 enhance stack");
-        img.setZ(img.getNSlices()/2);
-        img.updateAndDraw();
-        IJ.run(img, "Find Maxima...", "prominence=5 output=[Point Selection]");
-        IJ.run(img, "Cell Outliner", "cell_radius=50 tolerance=0.80 kernel_width=15 dark_edge kernel_smoothing=2 polygon_smoothing=2 weighting_gamma=1 iterations=1 dilate=1 all_slices");IJ.run(img, "Remove Outliers...", "radius=15 threshold=1 which=Bright stack");
-        ImagePlus imgCells = WindowManager.getImage(img.getTitle()+" Cell Outline");
-        imgCells.hide();
-        imgCells.setCalibration(imgNuc.getCalibration());
-        IJ.run(imgCells, "Select None", "");
-        Objects3DPopulation cellPop = new Objects3DPopulation(imgCells);
-        cellPop.removeObjectsTouchingBorders(imgCells, false);
-        closeImages(imgCells);
-        closeImages(img);
-        return(cellPop);
-    }
     
       /**
      * Find negative cells
@@ -606,8 +581,8 @@ public class RNA_Scope_Processing {
      * @param popObj
      * @param img 
      */
-    public static void labelsObject (Objects3DPopulation popObj, ImagePlus img) {
-        Font tagFont = new Font("SansSerif", Font.PLAIN, 24);
+    public static void labelsObject (Objects3DPopulation popObj, ImagePlus img, int fontSize) {
+        Font tagFont = new Font("SansSerif", Font.PLAIN, fontSize);
         String name;
         for (int n = 0; n < popObj.getNbObjects(); n++) {
             Object3D obj = popObj.getObject(n);
@@ -720,7 +695,7 @@ public class RNA_Scope_Processing {
         // draw nucleus population
         cellsPop.draw(imgCells, 255);
         drawNegCells(cellsPop, imgNegCells);
-        labelsObject(cellsPop, imgCellLabels);
+        labelsObject(cellsPop, imgCellLabels, 24);
         ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
         ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
         imgObjects.setCalibration(cal);

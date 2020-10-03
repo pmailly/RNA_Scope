@@ -228,7 +228,8 @@ public class RNA_Scope_Local implements PlugIn {
                         closeImages(imgGeneX);
                     }
                 }
-                output_detail_Analyze.close();
+                if (new File(outDirResults + "detailed_results.xls").exists())
+                    output_detail_Analyze.close();
                 } catch (IOException | DependencyException | ServiceException | FormatException ex) {
                     Logger.getLogger(RNA_Scope_Local.class.getName()).log(Level.SEVERE, null, ex);
                 }

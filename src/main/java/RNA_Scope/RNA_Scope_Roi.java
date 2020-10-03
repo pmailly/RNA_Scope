@@ -104,7 +104,7 @@ private final Calibration cal = new Calibration();
                 // Find nd files
                 if (imageFile[i].endsWith(imageExt)) {
                     String imageName = inDir+ File.separator+imageFile[i];
-                    rootName = imageFile[i].replace(imageExt, "");
+                    rootName = imageFile[i].replace("."+ imageExt, "");
                     reader.setId(imageName);
                     int sizeZ = reader.getSizeZ();
                     imageNum++;

@@ -7,9 +7,9 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.imageExt;
+import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
 import static RNA_Scope_Utils.JDialogOmeroConnect.selectedDataset;
@@ -24,14 +24,9 @@ import static RNA_Scope_Utils.OmeroConnect.securityContext;
 import static RNA_Scope_Utils.RNA_Scope_Processing.dialog;
 import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
-import static RNA_Scope_Utils.RNA_Scope_Processing.drawNegCells;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
-import static RNA_Scope_Utils.RNA_Scope_Processing.find_negativeCell;
-import static RNA_Scope_Utils.RNA_Scope_Processing.labelsObject;
-import static RNA_Scope_Utils.RNA_Scope_Processing.colorPop;
-import static RNA_Scope_Utils.RNA_Scope_Processing.readXML;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleus;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleusLabelledImage;
@@ -39,9 +34,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.io.FileSaver;
 import ij.plugin.PlugIn;
-import ij.plugin.RGBStackMerge;
 import ij.plugin.frame.RoiManager;
 import java.io.File;
 import java.io.IOException;
@@ -52,8 +45,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Objects3DPopulation;
-import mcib3d.geom.Point3D;
-import mcib3d.image3d.ImageHandler;
 import ome.model.units.BigResult;
 import omero.gateway.exception.DSAccessException;
 import omero.gateway.exception.DSOutOfServiceException;
@@ -257,7 +248,8 @@ public class RNA_Scope_Omero implements PlugIn {
                     }
                 }
             }
-            output_detail_Analyze.close();
+            if (new File(outDirResults + "detailed_results.xls").exists())
+                output_detail_Analyze.close();
             
             // Attach results file to image
             File fileResults = new File(outDirResults);

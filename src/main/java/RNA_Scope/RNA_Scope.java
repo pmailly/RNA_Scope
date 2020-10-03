@@ -26,9 +26,10 @@ public class RNA_Scope implements PlugIn {
     public static Calibration cal = new Calibration();
     public static double minNucVol = 50;
     public static double maxNucVol = 900;
-    public static boolean adult = false;
     public static float nucDil = 3;
     public static int removeSlice = 0;
+    public static double singleDotIntGeneRef = 0;
+    public static double singleDotIntGeneX = 0;
     private static final double pixWidth = 0.103;
     private static final double pixDepth = 0.5;
     public static Cell nucleus = new Cell(0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0);
