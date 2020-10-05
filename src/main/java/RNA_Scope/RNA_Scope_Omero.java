@@ -177,20 +177,15 @@ public class RNA_Scope_Omero implements PlugIn {
                         double bgGeneX = find_background(imgGeneX, roiGeneX);
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
-                        
-                        
-                         // Estimated background in gene reference and gene X channel
-                        double bgGeneRefEstimated = find_background(imgGeneRef, roiGeneRef);
-                        double bgGeneXEstimated = find_background(imgGeneX, roiGeneX);
 
 
-                      // write results for each cell population
+                       // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
                             output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellGeneRefInt()
                                     +"\t"+bgGeneRef+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
                                     +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+bgGeneX+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
                                     +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getnbGeneXDotsSegInt()+"\n");
-                            output_detail_Analyze.flush();                         
+                            output_detail_Analyze.flush();                       
 
                         }
 
