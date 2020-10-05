@@ -311,7 +311,6 @@ public class RNA_Scope_Processing {
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
                     geneRefDotsVol += dotObj.getVolumePixels();
                     geneRefDotsInt += dotObj.getIntegratedDensity(imhRef);
-                    dotsRefPop.removeObject(dotObj);
                 }
             }
             
@@ -322,7 +321,6 @@ public class RNA_Scope_Processing {
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
                     geneXDotsVol += dotObj.getVolumePixels();
                     geneXDotsInt += dotObj.getIntegratedDensity(imhX);
-                    dotsXPop.removeObject(dotObj);
                 }
             }
             // dots number based on cell intensity
@@ -330,10 +328,10 @@ public class RNA_Scope_Processing {
             int nbGeneXDotsCellInt = Math.round((float)((cellGeneXInt - bgGeneX * cellVol) / singleDotIntGeneX));
             
             // dots number based on dots segmented intensity
-            //int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * cellVol) / singleDotIntGeneRef));
-            int nbGeneRefDotsSegInt = Math.round((float)(geneRefDotsInt / singleDotIntGeneRef));
-            //int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * cellVol) / singleDotIntGeneX));
-            int nbGeneXDotsSegInt = Math.round((float)(geneXDotsInt / singleDotIntGeneX));
+            int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * geneRefDotsVol) / singleDotIntGeneRef));
+            //int nbGeneRefDotsSegInt = Math.round((float)(geneRefDotsInt / singleDotIntGeneRef));
+            int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * geneXDotsVol) / singleDotIntGeneX));
+            //int nbGeneXDotsSegInt = Math.round((float)(geneXDotsInt / singleDotIntGeneX));
             
             Cell cell = new Cell(index, cellVol, cellGeneRefInt, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
                     geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
@@ -497,20 +495,6 @@ public class RNA_Scope_Processing {
     }
     
     /**
-     * Draw negative cells (name = n)
-     * @param cellsPop
-     * @param imh
-     */
-    public static void drawNegCells(Objects3DPopulation cellsPop, ImageHandler imh) {
-        for (int n = 0; n < cellsPop.getNbObjects(); n++) {
-            Object3D obj = cellsPop.getObject(n);
-            if ("n".equals(obj.getName()))
-               obj.draw(imh, n);
-        }
-    }
-        
-    
-    /**
      * 
      * @param xmlFile
      * @return
@@ -583,13 +567,11 @@ public class RNA_Scope_Processing {
             String outDirResults, String rootName) {
         // red geneRef , green geneX, blue nucDilpop
         ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
-        ImageHandler imgNegCells = ImageHandler.wrap(imgNuc).createSameDimensions();
         ImagePlus imgCellLabels = ImageHandler.wrap(imgNuc).createSameDimensions().getImagePlus();
         // draw nucleus population
         cellsPop.draw(imgCells, 255);
-        drawNegCells(cellsPop, imgNegCells);
         labelsObject(cellsPop, imgCellLabels, 24);
-        ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(),null,imgNegCells.getImagePlus(),null,imgCellLabels};
+        ImagePlus[] imgColors = {imgGeneRef, imgGeneX, imgCells.getImagePlus(), null, null, null, imgCellLabels};
         ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
         imgObjects.setCalibration(cal);
         IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
@@ -598,7 +580,6 @@ public class RNA_Scope_Processing {
         FileSaver ImgObjectsFile = new FileSaver(imgObjects);
         ImgObjectsFile.saveAsTiff(outDirResults + rootName + "_Objects.tif");
         imgCells.closeImagePlus();
-        imgNegCells.closeImagePlus();
         closeImages(imgCellLabels);
     }
     
