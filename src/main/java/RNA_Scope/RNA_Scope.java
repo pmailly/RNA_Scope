@@ -32,7 +32,7 @@ public class RNA_Scope implements PlugIn {
     public static double singleDotIntGeneX = 0;
     private static final double pixWidth = 0.103;
     private static final double pixDepth = 0.5;
-    public static Cell nucleus = new Cell(0, false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0, 0);
+    public static Cell nucleus = new Cell(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     public static BufferedWriter output_detail_Analyze;
     
 

@@ -7,9 +7,9 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.imageExt;
-import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
 import static RNA_Scope_Utils.JDialogOmeroConnect.selectedDataset;
@@ -171,47 +171,26 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Find gene X dots
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
                         
+                        
+                        // Estimated background in gene reference and gene X channel
+                        double bgGeneRef = find_background(imgGeneRef, roiGeneRef);
+                        double bgGeneX = find_background(imgGeneX, roiGeneX);
                         // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
                         
                         
                          // Estimated background in gene reference and gene X channel
                         double bgGeneRefEstimated = find_background(imgGeneRef, roiGeneRef);
                         double bgGeneXEstimated = find_background(imgGeneX, roiGeneX);
 
-                        // find intensity in gene reference for negative cell
-
-//                        double[] negativeCellParams  = {0, 0};
-//                        if (!image.getAnnotations().isEmpty()) {
-//                            List<FileAnnotationData> fileAnnotations = getFileAnnotations(image, null);
-//                            // If exists roi in image
-//                            String roiFile = rootName + ".zip";
-//                            String xmlRoiFile = rootName + ".xml";
-//                            RoiManager rm = new RoiManager(false);
-//                            for (FileAnnotationData file : fileAnnotations) {
-//                                if (file.getFileName().equals(roiFile)) {
-//                                    roiFile = file.getFilePath();
-//                                    rm.reset();
-//                                    rm.runCommand("Open", roiFile);
-//                                    negativeCellParams  = find_negativeCell(rm, imgGeneRef, cellsPop, listCells);
-//                                }
-//                                else if (file.getFileName().equals(xmlRoiFile)) {
-//                                    xmlRoiFile = file.getFilePath();
-//                                    ArrayList<Point3D> ptsCell = readXML(xmlRoiFile);
-//                                    negativeCellParams = find_negativeCell(ptsCell, imgGeneRef, cellsPop, listCells);
-//                                }
-//                            }
-//                        }
 
                       // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
-                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellVolUnit()+"\t"+listCells.get(n).getNegative()
-                                    +"\t"+listCells.get(n).getGeneRefInt()+"\t"+listCells.get(n).getGeneRefMeanInt()+"\t"+listCells.get(n).getGeneRefDots()
-                                    +"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsVolUnit()+"\t"+listCells.get(n).getGeneRefDotsInt()+"\t"+listCells.get(n).getGeneRefDotsMeanInt()
-                                    +"\t"+listCells.get(n).getGeneXInt()+"\t"+listCells.get(n).getGeneXMeanInt()+"\t"+listCells.get(n).getGeneXDots()
-                                    +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsVolUnit()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getGeneXDotsMeanInt()
-                                    +"\t"+bgGeneRefEstimated+"\t"+bgGeneXEstimated+"\n");
-                            output_detail_Analyze.flush();                        
+                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellGeneRefInt()
+                                    +"\t"+bgGeneRef+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
+                                    +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+bgGeneX+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
+                                    +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getnbGeneXDotsSegInt()+"\n");
+                            output_detail_Analyze.flush();                         
 
                         }
 

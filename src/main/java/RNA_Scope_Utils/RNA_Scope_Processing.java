@@ -86,8 +86,8 @@ public class RNA_Scope_Processing {
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
-        gd.addNumericField("Gene reference single dot intensity : ", singleDotIntGeneRef, 0);
-        gd.addNumericField("Gene X single dot intensity : ", singleDotIntGeneX, 0);
+        gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
+        gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
             gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
@@ -284,7 +284,8 @@ public class RNA_Scope_Processing {
      * @param imgGeneX
      */
     
-    public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsRefPop, Objects3DPopulation dotsXPop, ImagePlus imgGeneRef, ImagePlus imgGeneX) {
+    public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsRefPop, Objects3DPopulation dotsXPop, ImagePlus imgGeneRef,
+            ImagePlus imgGeneX, double bgGeneRef, double bgGeneX) {
         IJ.showStatus("Finding cells with gene reference ...");
         ArrayList<Cell> cells = new ArrayList<>();
         ImageHandler imhRef = ImageHandler.wrap(imgGeneRef);
@@ -292,52 +293,50 @@ public class RNA_Scope_Processing {
         int index = 0;
         
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
-            int geneRefDots = 0, geneXDots = 0;
-            double cellVol, cellVolUnit, geneRefMeanDotsVol, geneXMeanDotsVol;
-            double geneRefMeanInt, geneRefInt, geneXMeanInt, geneXInt;
+            double cellVol, cellGeneRefInt, cellGeneXInt;
+            double geneRefDotsVol = 0, geneXDotsVol = 0;
             double geneRefDotsInt = 0, geneXDotsInt = 0;
-            double geneRefDotsMeanInt = 0, geneXDotsMeanInt = 0;
             
             // calculate cell parameters
             index++;
             Object3D cellObj = cellsPop.getObject(i);
             cellVol = cellObj.getVolumePixels();
-            cellVolUnit = cellObj.getVolumeUnit();
-            geneRefMeanInt = cellObj.getPixMeanValue(imhRef);
-            geneXMeanInt = cellObj.getPixMeanValue(imhX);
-            geneRefInt = cellObj.getIntegratedDensity(imhRef);
-            geneXInt = cellObj.getIntegratedDensity(imhX);
-            double dotsRefVol = 0, dotsRefVolUnit = 0, dotsXVol = 0, dotsXVolUnit = 0;
+            cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
+            cellGeneXInt = cellObj.getIntegratedDensity(imhX);
+            
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
                 Object3D dotObj = dotsRefPop.getObject(n);
                 // find dots inside cell
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
-                    geneRefDots++;
-                    dotsRefVolUnit += dotObj.getVolumeUnit();
-                    dotsRefVol += dotObj.getVolumePixels();
+                    geneRefDotsVol += dotObj.getVolumePixels();
                     geneRefDotsInt += dotObj.getIntegratedDensity(imhRef);
-                    geneRefDotsMeanInt += dotObj.getPixMeanValue(imhRef);
+                    dotsRefPop.removeObject(dotObj);
                 }
             }
-            geneRefDotsMeanInt = geneRefDotsMeanInt/geneRefDots;
             
             // X dots parameters
             for (int n = 0; n < dotsXPop.getNbObjects(); n++) {
                 Object3D dotObj = dotsXPop.getObject(n);
                 // find dots inside cell
                 if (dotObj.hasOneVoxelColoc(cellObj)) {
-                    geneXDots++;
-                    dotsXVol += dotObj.getVolumePixels();
-                    dotsXVolUnit += dotObj.getVolumeUnit();
+                    geneXDotsVol += dotObj.getVolumePixels();
                     geneXDotsInt += dotObj.getIntegratedDensity(imhX);
-                    geneXDotsMeanInt += dotObj.getPixMeanValue(imhRef);
+                    dotsXPop.removeObject(dotObj);
                 }
             }
-            geneXDotsMeanInt = geneRefDotsMeanInt/geneXDots;
+            // dots number based on cell intensity
+            int nbGeneRefDotsCellInt = Math.round((float)((cellGeneRefInt - bgGeneRef * cellVol) / singleDotIntGeneRef));
+            int nbGeneXDotsCellInt = Math.round((float)((cellGeneXInt - bgGeneX * cellVol) / singleDotIntGeneX));
             
-            Cell cell = new Cell(index, false, cellVol, cellVolUnit, geneRefMeanInt, geneRefInt, geneRefDots, dotsRefVol, dotsRefVolUnit,
-                    geneRefDotsInt, geneRefDotsMeanInt, geneXMeanInt, geneXInt, geneXDots, dotsXVol, dotsXVolUnit,geneXDotsInt, geneXDotsMeanInt);
+            // dots number based on dots segmented intensity
+            //int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * cellVol) / singleDotIntGeneRef));
+            int nbGeneRefDotsSegInt = Math.round((float)(geneRefDotsInt / singleDotIntGeneRef));
+            //int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * cellVol) / singleDotIntGeneX));
+            int nbGeneXDotsSegInt = Math.round((float)(geneXDotsInt / singleDotIntGeneX));
+            
+            Cell cell = new Cell(index, cellVol, cellGeneRefInt, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
+                    geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
             cells.add(cell);
         }
         return(cells);
@@ -419,113 +418,7 @@ public class RNA_Scope_Processing {
         return(cellPop);
     }
     
-//      /**
-//     * Nucleus segmentation 2 old version
-//     * @param imgNuc
-//     * @return 
-//     * @return cellPop
-//     */
-//    public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
-//        ImagePlus img = new Duplicator().run(imgNuc);
-//        removeOutliers(img, 15, 15, 3);
-//        ClearCLBuffer imgCL = clij2.push(imgNuc);
-//        ClearCLBuffer imgCLDOG = DOG(imgCL, 20, 20, 20, 30, 30, 30);
-//        clij2.release(imgCL);
-//        ImagePlus imgDOG = clij2.pull(imgCLDOG);
-//        clij2.release(imgCLDOG);
-//        ImageStack stack = new ImageStack(imgDOG.getWidth(), imgNuc.getHeight());
-//        for (int i = 1; i <= imgDOG.getStackSize(); i++) {
-//            imgDOG.setZ(i);
-//            imgDOG.updateAndDraw();
-//            IJ.run(imgDOG, "Nuclei Outline", "blur=0 blur2=0 threshold_method=Triangle outlier_radius=0 outlier_threshold=1 max_nucleus_size=500 "
-//                    + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
-//            imgDOG.setZ(1);
-//            imgDOG.updateAndDraw();
-//            ImagePlus mask = new ImagePlus("mask", imgDOG.createRoiMask().getBufferedImage());
-//            ImageProcessor ip =  mask.getProcessor();
-//            ip.invertLut();
-//            for (int n = 0; n < 3; n++) 
-//                ip.erode();
-//            stack.addSlice(ip);
-//        }
-//        ImagePlus imgStack = new ImagePlus("Nucleus", stack);
-//        ImagePlus imgWater = WatershedSplit(imgStack, 8);
-//        closeImages(imgStack);
-//        imgWater.setCalibration(imgNuc.getCalibration());
-//        Objects3DPopulation cellPop = new Objects3DPopulation(imgWater);
-//        cellPop.removeObjectsTouchingBorders(imgWater, false);
-//        closeImages(imgWater);
-//        closeImages(imgDOG);
-//        return(cellPop);
-//    }
-            
-    
-      /**
-     * Find negative cells
-     * 
-     * @param rm
-     * @param imgGeneRef
-     * @param cellsPop
-     * @param listCells
-     * @return 
-     */
-    public static double[] find_negativeCell(RoiManager rm, ImagePlus imgGeneRef, Objects3DPopulation cellsPop, ArrayList<Cell> listCells) {
-        double cellInt = 0;
-        double cellMeanInt = 0;
-        double[] cellParams = new double[2];
-        ImageHandler imh = ImageHandler.wrap(imgGeneRef);
-        for (int r = 0; r < rm.getCount(); r++) {
-            rm.select(imgGeneRef,r);
-            imgGeneRef.updateAndDraw();
-            Roi cell = imgGeneRef.getRoi();
-            Point3D pt = new Point3D(cell.getXBase(), cell.getYBase(), cell.getZPosition());
-            for (int n = 0; n < cellsPop.getNbObjects(); n++) {
-                Object3D obj = cellsPop.getObject(n);
-                if (obj.inside(pt)) {
-                   listCells.get(n).setNegative(true);
-                   obj.setName("n");
-                   cellInt +=  obj.getIntegratedDensity(imh);
-                   cellMeanInt += obj.getPixMeanValue(imh);
-                   break;
-                }
-            }
-        }
-        cellParams[0] = cellMeanInt/rm.getCount();
-        cellParams[1] = cellInt/rm.getCount();
-        return cellParams;
-    }  
-    
-      /**
-     * Find negative cells from xml file
-     * 
-     * @param pts
-     * @param imgGeneRef
-     * @param cellsPop
-     * @param listCells
-     * @return 
-     */
-    public static double[] find_negativeCell(ArrayList<Point3D> pts, ImagePlus imgGeneRef, Objects3DPopulation cellsPop, ArrayList<Cell> listCells) {
-        double cellInt = 0;
-        double cellMeanInt = 0;
-        double[] cellParams = new double[2];
-        ImageHandler imh = ImageHandler.wrap(imgGeneRef);
-        for (int p = 0; p < pts.size(); p++) {
-            Point3D pt = new Point3D(pts.get(p).x, pts.get(p).y,pts.get(p).z);
-            for (int n = 0; n < cellsPop.getNbObjects(); n++) {
-                Object3D obj = cellsPop.getObject(n);
-                if (obj.inside(pt)) {
-                   listCells.get(n).setNegative(true);
-                   obj.setName("n");
-                   cellInt +=  obj.getIntegratedDensity(imh);
-                   cellMeanInt += obj.getPixMeanValue(imh);
-                   break;
-                }
-            }
-        }
-        cellParams[0] = cellMeanInt/pts.size();
-        cellParams[1] = cellInt/pts.size();
-        return cellParams;
-    }  
+
     
     
     private static ImagePlus WatershedSplit(ImagePlus binaryMask, float rad) {
@@ -556,21 +449,20 @@ public class RNA_Scope_Processing {
     
     /*
     * Mean background intensity
-    * Z project min intensity
-    * gaussian blur 100 and calculate Integrated intensity
     */
     public static double find_background(ImagePlus img, Roi roi) {
-        img.setRoi(roi);
+        if (roi != null)
+            img.setRoi(roi);
         ImagePlus imgCrop = img.crop();
         ZProjector zproject = new ZProjector();
-        zproject.setMethod(ZProjector.AVG_METHOD);
+        zproject.setMethod(ZProjector.SUM_METHOD);
         zproject.setStartSlice(1);
         zproject.setStopSlice(img.getNSlices());
         zproject.setImage(img);
         zproject.doProjection();
         ImagePlus imgProj = zproject.getProjection();
         ImageProcessor imp = imgProj.getProcessor();
-        double bgInt = imp.getStats().mean;
+        double bgInt = imp.getStats().mean  / (imp.getStats().area + imgCrop.getNSlices());
         System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
         closeImages(imgProj);
         return(bgInt);  
@@ -654,10 +546,10 @@ public class RNA_Scope_Processing {
         FileWriter  fwAnalyze_detail = new FileWriter(outDirResults + "detailed_results.xls",false);
         output_detail_Analyze = new BufferedWriter(fwAnalyze_detail);
         // write results headers
-        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Vol (µm3)\tCell negative\t"
-                + "Integrated intensity in gene ref. channel\tMean intensity in gene ref. channel\tNb gene ref. dots\tDots ref. volume (pixel3)\tDots ref. volume (µm3)\tIntegrated intensity of dots ref. channel\tMean of dots ref. intensity\t"
-                + "Integrated intensity in gene X channel\tMean intensity in gene X channel\tNb gene X dots\tDots X volume (pixel3)\tDots X volume (µm3)\tIntegrated intensity of dots X channel\tMean of dots X intensity\t"
-                + "Estimated mean intensity background in gene ref. channel\tEstimated mean intensity background in gene X channel\n");
+        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
+                + "Total dots gene ref. (based on cell intensity)\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
+                + "Total dots gene ref (based on dots seg intensity)\tCell Integrated intensity in gene X channel\tMean background intensity in X channel\t"
+                + "Total dots gene X (based on cell intensity)\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)\n");
         output_detail_Analyze.flush();
     }
     

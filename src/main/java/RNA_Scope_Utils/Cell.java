@@ -12,210 +12,148 @@ package RNA_Scope_Utils;
 public class Cell {
     // index
     private int index;
-    // negative
-    private boolean negative;
+   
     // volume in pixels
     private double cellVol;
-    // volume in unit
-    private double cellVolUnit;
+    
     // Reference channel
-    // mean intensity in gene reference channel
-    private double geneRefMeanInt;
-    // integrated intensity in gene reference channel
-    private double geneRefInt;
-    // gene reference dot number
-    private int geneRefDots;
+    // cell integrated intensity in gene reference channel
+    private double cellGeneRefInt;
+   
     // dots volume in pixels
     private double geneRefDotsVol;
-    // dots volume in unit
-    private double geneRefDotsVolUnit;
     // integrated intensity of total gene reference dots
     private double geneRefDotsInt;
-    // Mean intensity of total gene reference dots
-    private double geneRefDotsMeanInt;
+   
     
     // Gene X channel
-    // mean intensity in gene X channel
-    private double geneXMeanInt;
-    // integrated intensity in gene X channel
-    private double geneXInt;
-    // gene X dot number
-    private int geneXDots;
+   
+    // cell integrated intensity in gene X channel
+    private double cellGeneXInt;
+    
     // dots volume in pixels
     private double geneXDotsVol;
-    // dots volume in unit
-    private double geneXDotsVolUnit;
     // integrated intensity of total gene X dots
     private double geneXDotsInt;
-    // Mean intensity of gene X dots
-    private double geneXDotsMeanInt;
+    
+    //number of dots in cell based on cell intensity channel
+    private int nbGeneRefDotsCellInt;
+    private int nbGeneXDotsCellInt;
+
+    // number of dost in cell based on dots segmentation intensity
+    private int nbGeneRefDotsSegInt;
+    private int nbGeneXDotsSegInt;
    
 	
-	public Cell(int index, boolean negative, double cellVol, double cellVolUnit, double geneRefMeanInt, double geneRefInt, int geneRefDots, double geneRefDotsVol,
-                double geneRefDotsVolUnit, double geneRefDotsInt, double geneRefDotMeanInt, double geneXMeanInt, double geneXInt, int geneXDots, double geneXDotsVol,
-                double geneXDotsVolUnit, double geneXDotsInt, double geneXDotsMeanInt) {
+	public Cell(int index, double cellVol, double cellGeneRefInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
+                int nbGeneRefDotsSegInt, double cellGeneXInt, double geneXDotsVol, double geneXDotsInt, int nbGeneXDotsCellInt, int nbGeneXDotsSegInt) {
             this.index = index;
-            this.negative = negative;
             this.cellVol = cellVol;
-            this.cellVolUnit = cellVolUnit;
-            this.geneRefMeanInt = geneRefMeanInt;
-            this.geneRefInt = geneRefInt;
-            this.geneRefDots = geneRefDots;
+            this.cellGeneRefInt = cellGeneRefInt;
             this.geneRefDotsVol = geneRefDotsVol;
-            this.geneRefDotsVolUnit = geneRefDotsVolUnit;
             this.geneRefDotsInt = geneRefDotsInt;
-            this.geneRefDotsMeanInt = geneRefDotMeanInt;
-            this.geneXMeanInt = geneXMeanInt;
-            this.geneXInt = geneXInt;
-            this.geneXDots = geneXDots;
+            this.nbGeneRefDotsCellInt = nbGeneRefDotsCellInt;
+            this.nbGeneRefDotsSegInt = nbGeneRefDotsSegInt;
+            this.cellGeneXInt = cellGeneXInt;
             this.geneXDotsVol = geneXDotsVol;
-            this.geneXDotsVolUnit = geneXDotsVolUnit;
             this.geneXDotsInt = geneXDotsInt;
-            this.geneXDotsMeanInt = geneXDotsMeanInt;
+            this.nbGeneXDotsCellInt = nbGeneXDotsCellInt;
+            this.nbGeneXDotsSegInt = nbGeneXDotsSegInt;
 	}
         
         public void setIndex(int index) {
             this.index = index;
 	}
         
-        public void setNegative(boolean negative) {
-            this.negative = negative;
-	}
-        
         public void setCellVol(double cellVol) {
             this.cellVol = cellVol;
 	}
         
-        public void setCellVolUnit(double cellVolUnit) {
-            this.cellVolUnit = cellVolUnit;
+        public void setCellGeneRefInt(double cellGeneRefInt) {
+            this.cellGeneRefInt = cellGeneRefInt;
 	}
-        
-        public void setGeneRefMeanInt(double geneRefMeanInt) {
-            this.geneRefMeanInt = geneRefMeanInt;
-	}
-        
-        public void setGeneRefInt(double geneRefInt) {
-            this.geneRefInt = geneRefInt;
-	}
-        
-        public void setGeneRefDots(int geneRefDots) {
-            this.geneRefDots = geneRefDots;
-        }
         
         public void setGeneRefDotsVol(double geneRefDotsVol) {
             this.geneRefDotsVol = geneRefDotsVol;
-        }
-        
-        public void setGeneRefDotsVolUnit(double geneRefDotsVolUnit) {
-            this.geneRefDotsVolUnit = geneRefDotsVolUnit;
         }
         
         public void setGeneRefDotsInt(double geneRefDotsInt) {
             this.geneRefDotsInt = geneRefDotsInt;
         }
         
-        public void setGeneRefDotsMeanInt(double geneRefDotsMeanInt) {
-            this.geneRefDotsMeanInt = geneRefDotsMeanInt;
+        public void setnbGeneRefDotsCellInt(int nbGeneRefDotsCellInt) {
+            this.nbGeneRefDotsCellInt = nbGeneRefDotsCellInt;
         }
         
-        public void setGeneXMeanInt(double geneXMeanInt) {
-            this.geneXMeanInt = geneXMeanInt;
-	}
-        
-        public void setGeneXInt(double geneXInt) {
-            this.geneXInt = geneXInt;
-	}
-        
-        public void setGeneXDots(int geneXDots) {
-            this.geneXDots = geneXDots;
+        public void setnbGeneRefDotsSegInt(int nbGeneRefDotsSegInt) {
+            this.nbGeneRefDotsCellInt = nbGeneRefDotsCellInt;
         }
+        
+        public void setCellGeneXInt(double cellGeneXInt) {
+            this.cellGeneXInt = cellGeneXInt;
+	}
         
         public void setGeneXDotsVol(double geneXDotsVol) {
             this.geneXDotsVol = geneXDotsVol;
-        }
-        
-        public void setGeneXDotsVolUnit(double geneXDotsVolUnit) {
-            this.geneXDotsVolUnit = geneXDotsVolUnit;
         }
         
         public void setGeneXDotsInt(double geneXDotsInt) {
             this.geneXDotsInt = geneXDotsInt;
         }
         
-        public void setGeneXDotsMeanInt(double geneXDotsMeanInt) {
-            this.geneXDotsMeanInt = geneXDotsMeanInt;
+        public void setnbGeneXDotsCellInt(int nbGeneXDotsCellInt) {
+            this.nbGeneXDotsCellInt = nbGeneXDotsCellInt;
         }
         
+        public void setnbGeneXDotsSegInt(int nbGeneXDotsSegInt) {
+            this.nbGeneXDotsCellInt = nbGeneXDotsCellInt;
+        }
         
         public int getIndex() {
             return index;
-        }
-        
-        public boolean getNegative() {
-            return negative;
         }
         
         public double getCellVol() {
             return cellVol;
         }
         
-        public double getCellVolUnit() {
-            return cellVolUnit;
-        }
-        public double getGeneRefMeanInt() {
-            return geneRefMeanInt;
-        }
-        
-        public double getGeneRefInt() {
-            return geneRefInt;
-	}
-        
-	public int getGeneRefDots() {
-            return geneRefDots;
+        public double getCellGeneRefInt() {
+            return cellGeneRefInt;
 	}
         
         public double getGeneRefDotsVol() {
             return geneRefDotsVol;
         }
         
-        public double getGeneRefDotsVolUnit() {
-            return geneRefDotsVolUnit;
-        }
-        
         public double getGeneRefDotsInt() {
             return geneRefDotsInt;
         }
         
-        public double getGeneRefDotsMeanInt() {
-            return geneRefDotsMeanInt;
+        public int getnbGeneRefDotsCellInt() {
+            return nbGeneRefDotsCellInt;
         }
         
-        public double getGeneXMeanInt() {
-            return geneXMeanInt;
+        public int getnbGeneRefDotsSegInt() {
+            return nbGeneRefDotsSegInt;
         }
         
-        public double getGeneXInt() {
-            return geneXInt;
-	}
-        
-	public int getGeneXDots() {
-            return geneXDots;
+        public double getCellGeneXInt() {
+            return cellGeneXInt;
 	}
         
         public double getGeneXDotsVol() {
             return geneXDotsVol;
         }
         
-        public double getGeneXDotsVolUnit() {
-            return geneXDotsVolUnit;
-        }
-        
         public double getGeneXDotsInt() {
             return geneXDotsInt;
         }
         
-        public double getGeneXDotsMeanInt() {
-            return geneXDotsMeanInt;
+        public int getnbGeneXDotsCellInt() {
+            return nbGeneXDotsCellInt;
         }
         
+        public int getnbGeneXDotsSegInt() {
+            return nbGeneXDotsSegInt;
+        }
 }

@@ -7,6 +7,7 @@ package RNA_Scope;
 
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.dialog;
+import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
@@ -36,6 +37,8 @@ import loci.formats.services.OMEXMLService;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 import loci.plugins.util.ImageProcessorReader;
+import mcib3d.geom.Object3D;
+import mcib3d.geom.Object3DVoxels;
 
 
 /**
@@ -49,23 +52,7 @@ private String outDirResults = "";
 private final Calibration cal = new Calibration();   
 
 
-    /*
-    * Get sum of intensity in stack
-    */
-    public static double StackIntensity(ImagePlus img) {
-        ZProjector zproject = new ZProjector();
-        zproject.setMethod(ZProjector.SUM_METHOD);
-        zproject.setStartSlice(1);
-        zproject.setStopSlice(img.getNSlices());
-        zproject.setImage(img);
-        zproject.doProjection();
-        ImagePlus imgProj = zproject.getProjection();
-        ImageProcessor imp = imgProj.getProcessor();
-        double bgInt = imp.getStats().mean * imp.getStats().area;
-        System.out.println("Mean Background = " + bgInt);
-        closeImages(imgProj);
-        return(bgInt);  
-    }
+    
     
   @Override
     public void run(String arg) {
@@ -166,9 +153,9 @@ private final Calibration cal = new Calibration();
                             System.out.println("Opening reference gene channel ...");
                             ImagePlus imgGeneRef = BF.openImagePlus(options)[0];
                             if (roiName.contains("bg"))
-                               geneRefBgInt = StackIntensity(imgGeneRef);
+                               geneRefBgInt = find_background(imgGeneRef, null);
                             else
-                               geneRefInt = StackIntensity(imgGeneRef);
+                               geneRefInt = find_background(imgGeneRef, null);
                         }
                     }
                 }
