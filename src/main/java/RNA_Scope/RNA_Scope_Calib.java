@@ -185,7 +185,7 @@ private static BufferedWriter output_dotCalib;
                         output_dotCalib = new BufferedWriter(fwAnalyze_detail);
                         // write results headers
                         output_dotCalib.write("Image Name\t#Dot\tDot Vol (pixel3)\tDot Integrated Intensity\tMean Dot Background intensity\t"
-                                + "Corrected Dots Integrated Intensity\tDot Z center\tDot Z range\n");
+                                + "Corrected Dots Integrated Intensity\tDot Z center\tDot Z range\tMean intensity per single dot\n");
                         output_dotCalib.flush();
                     }
                     
@@ -229,17 +229,23 @@ private static BufferedWriter output_dotCalib;
                         
                         // for all rois
                         // find background associated to dot
+                        double sumIntDots = 0, sumVolDots = 0, sumBgInt = 0;
                         for (int r = 0; r < rm.getCount(); r++) {
                             Roi roi = rm.getRoi(r);
                             Dot dot = dots.get(r);
                             double bgDotInt = bgIntensity(img, roi, dot.getZmin(), dot.getZmax());
                             dot.setBgIntDot(bgDotInt);
                             dot.setCorIntDot(dot.getIntDot() - (bgDotInt * dot.getvolDot()));
+                            sumVolDots += dot.getvolDot();
+                            sumIntDots += dot.getIntDot();
+                            sumBgInt += bgDotInt;
                             // write results
                             output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getvolDot()+"\t"+dot.getIntDot()+"\t"+dot.getBgIntDot()+"\t"+dot.getCorIntDot()+
-                                    "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
+                                    "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\t");
                             output_dotCalib.flush();
                         }
+                        double MeanIntDot = sumIntDots - sumVolDots * sumBgInt;
+                        output_dotCalib.write(MeanIntDot+"\t");
                     }
                 }
             }
