@@ -51,7 +51,7 @@ private final Calibration cal = new Calibration();
 private static BufferedWriter output_dotCalib;
 
     /*
-    * Get sum of intensity in stack
+    * Get Mean of intensity in stack
     */
     private double bgIntensity(ImagePlus img, Roi roi, int zMin, int zMax) {
         img.setRoi(roi);
@@ -67,6 +67,7 @@ private static BufferedWriter output_dotCalib;
         double bgInt = imp.getStats().mean;
         System.out.println("Mean Background = " + bgInt);
         closeImages(imgProj);
+        closeImages(imgCrop);
         return(bgInt);  
     }
     
@@ -83,8 +84,7 @@ private static BufferedWriter output_dotCalib;
             for (int i = 0; i < dotsPop.getNbObjects(); i++) {
                 Object3D dotObj = dotsPop.getObject(i);
                 if(dotObj.inside(pt.getRoundX(), pt.getRoundY(), pt.getRoundZ())) {
-                    Dot dot = new Dot(index, dotObj.getVolumePixels(), 0, dotObj.getIntegratedDensity(imh), 0, dotObj.getZmin(), dotObj.getZmax(),
-                    dotObj.getCenterZ());
+                    Dot dot = new Dot(index, dotObj.getVolumePixels(), dotObj.getIntegratedDensity(imh), dotObj.getZmin(), dotObj.getZmax(),dotObj.getCenterZ());
                     dots.add(dot);
                     pointedDotsPop.addObject(dotObj);
                     dotsPop.removeObject(dotObj);
@@ -203,7 +203,7 @@ private static BufferedWriter output_dotCalib;
                     }
                     else {                        
                         // Open Gene reference channel
-                        System.out.println("Opening reference gene channel ...");
+                        System.out.println("Opening gene channel ...");
                         ImagePlus img = IJ.openImage(imageName);
                         RoiManager rm = new RoiManager(false);
                         rm.runCommand("Open", roiFile);
@@ -229,23 +229,20 @@ private static BufferedWriter output_dotCalib;
                         
                         // for all rois
                         // find background associated to dot
-                        double sumIntDots = 0, sumVolDots = 0, sumBgInt = 0;
+                        double sumCorIntDots = 0;
                         for (int r = 0; r < rm.getCount(); r++) {
                             Roi roi = rm.getRoi(r);
                             Dot dot = dots.get(r);
                             double bgDotInt = bgIntensity(img, roi, dot.getZmin(), dot.getZmax());
-                            dot.setBgIntDot(bgDotInt);
-                            dot.setCorIntDot(dot.getIntDot() - (bgDotInt * dot.getvolDot()));
-                            sumVolDots += dot.getvolDot();
-                            sumIntDots += dot.getIntDot();
-                            sumBgInt += bgDotInt;
+                            double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
+                            sumCorIntDots += corIntDot;
                             // write results
-                            output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getvolDot()+"\t"+dot.getIntDot()+"\t"+dot.getBgIntDot()+"\t"+dot.getCorIntDot()+
-                                    "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\t");
+                            output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
+                                    "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
                             output_dotCalib.flush();
                         }
-                        double MeanIntDot = sumIntDots - sumVolDots * sumBgInt;
-                        output_dotCalib.write(MeanIntDot+"\t");
+                        double MeanIntDot = sumCorIntDots / rm.getCount();
+                        output_dotCalib.write("\t\t\t\t\t\t\t\t"+MeanIntDot+"\n");
                     }
                 }
             }

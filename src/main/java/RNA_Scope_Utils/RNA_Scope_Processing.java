@@ -446,7 +446,7 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
-    
+
     /*
     * Mean background intensity
     */
@@ -455,16 +455,17 @@ public class RNA_Scope_Processing {
             img.setRoi(roi);
         ImagePlus imgCrop = img.crop();
         ZProjector zproject = new ZProjector();
-        zproject.setMethod(ZProjector.SUM_METHOD);
+        zproject.setMethod(ZProjector.AVG_METHOD);
         zproject.setStartSlice(1);
         zproject.setStopSlice(img.getNSlices());
-        zproject.setImage(img);
+        zproject.setImage(imgCrop);
         zproject.doProjection();
         ImagePlus imgProj = zproject.getProjection();
         ImageProcessor imp = imgProj.getProcessor();
-        double bgInt = imp.getStats().mean  / (imp.getStats().area + imgCrop.getNSlices());
+        double bgInt = imp.getStats().mean;
         System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
         closeImages(imgProj);
+        closeImages(imgCrop);
         return(bgInt);  
     }
     
@@ -605,8 +606,8 @@ public class RNA_Scope_Processing {
      * save images objects population
      * @param imgNuc
      * @param cellsPop
-     * @param imgGeneRef
-     * @param imgGeneX
+     * @param geneRefPop
+     * @param geneXPop
      * @param outDirResults
      * @param rootName
      */

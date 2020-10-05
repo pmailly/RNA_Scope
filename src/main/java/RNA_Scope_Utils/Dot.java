@@ -12,20 +12,16 @@ package RNA_Scope_Utils;
 public class Dot {
     private int index;
     private int volDot;
-    private double bgIntDot;
     private double intDot;
-    private double corIntDot;
     private int zMin;
     private int zMax;
     private double zCenter;
    
 	
-	public Dot(int index, int volDot, double bgIntDot, double intDot, double corIntDot, int zMin, int zMax, double zCenter) {
+	public Dot(int index, int volDot, double intDot, int zMin, int zMax, double zCenter) {
             this.index = index;
             this.volDot = volDot;
-            this.bgIntDot = bgIntDot;
             this.intDot = intDot;
-            this.corIntDot = corIntDot;
             this.zMin = zMin;
             this.zMax = zMax;
             this.zCenter = zCenter;
@@ -38,19 +34,7 @@ public class Dot {
         public void setVolDot(int volDot) {
 		this.volDot = volDot;
 	}
-        
-         public void setBgIntDot(double bgIntDot) {
-		this.bgIntDot = bgIntDot;
-	}
-        
-        public void setIntDot(double intDot) {
-		this.intDot = intDot;
-	}
-        
-        public void setCorIntDot(double corIntDot) {
-		this.corIntDot = corIntDot;
-	}
-        
+                
         public void setZmin(int zMin) {
 		this.zMin = zMin;
 	}
@@ -67,21 +51,13 @@ public class Dot {
             return index;
         }
         
-        public int getvolDot() {
+        public int getVolDot() {
             return volDot;
         }
         
-        public double getBgIntDot() {
-		return bgIntDot;
-	}
-        
-	public double getIntDot() {
-		return intDot;
-	}
-        
-        public double getCorIntDot() {
-		return corIntDot;
-	}
+        public double getIntDot() {
+            return intDot; 
+        }
         
 	public int getZmin() {
 		return zMin;
