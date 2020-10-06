@@ -17,10 +17,13 @@ import ij.WindowManager;
 import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
+import ij.measure.Measurements;
+import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
+import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
@@ -452,17 +455,19 @@ public class RNA_Scope_Processing {
         if (roi != null)
             img.setRoi(roi);
         ImagePlus imgCrop = img.crop();
-        ZProjector zproject = new ZProjector();
-        zproject.setMethod(ZProjector.AVG_METHOD);
-        zproject.setStartSlice(1);
-        zproject.setStopSlice(img.getNSlices());
-        zproject.setImage(imgCrop);
-        zproject.doProjection();
-        ImagePlus imgProj = zproject.getProjection();
-        ImageProcessor imp = imgProj.getProcessor();
-        double bgInt = imp.getStats().mean;
+        ResultsTable rt = new ResultsTable();
+        Analyzer ana = new Analyzer(imgCrop, Measurements.AREA + Measurements.INTEGRATED_DENSITY, rt);
+        double intDen = 0, area = 0; 
+        int index = 0;
+        for (int z = 1; z <= imgCrop.getNSlices(); z++) {
+            imgCrop.setSlice(z);
+            ana.measure();
+            intDen += rt.getValue("intDen", index);
+            area += rt.getValue("Area", index);
+            index++;
+        }
+        double bgInt = intDen / area;
         System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
-        closeImages(imgProj);
         closeImages(imgCrop);
         return(bgInt);  
     }

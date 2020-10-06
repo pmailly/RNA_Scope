@@ -14,10 +14,13 @@ import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
+import ij.measure.Measurements;
+import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.PlugIn;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
+import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Font;
@@ -56,17 +59,19 @@ private static BufferedWriter output_dotCalib;
     private double bgIntensity(ImagePlus img, Roi roi, int zMin, int zMax) {
         img.setRoi(roi);
         ImagePlus imgCrop = new Duplicator().run(img);
-        ZProjector zproject = new ZProjector();
-        zproject.setMethod(ZProjector.AVG_METHOD);
-        zproject.setStartSlice(zMin);
-        zproject.setStopSlice(zMax);
-        zproject.setImage(imgCrop);
-        zproject.doProjection();
-        ImagePlus imgProj = zproject.getProjection();
-        ImageProcessor imp = imgProj.getProcessor();
-        double bgInt = imp.getStats().mean;
-        System.out.println("Mean Background = " + bgInt);
-        closeImages(imgProj);
+        ResultsTable rt = new ResultsTable();
+        Analyzer ana = new Analyzer(imgCrop, Measurements.AREA + Measurements.INTEGRATED_DENSITY, rt);
+        double intDen = 0, area = 0; 
+        int index = 0;
+        for (int z = zMin; z <= zMax; z++) {
+            imgCrop.setSlice(z);
+            ana.measure();
+            intDen += rt.getValue("IntDen", index);
+            area += rt.getValue("Area", index);
+            index++;
+        }
+        double bgInt = intDen / area;
+        System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
         closeImages(imgCrop);
         return(bgInt);  
     }
