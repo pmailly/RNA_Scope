@@ -5,6 +5,7 @@
  */
 package RNA_Scope;
 
+import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.imageExt;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
@@ -27,6 +28,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
+import static RNA_Scope_Utils.RNA_Scope_Processing.find_backgroundAuto;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleus;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleusLabelledImage;
@@ -171,10 +173,17 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Find gene X dots
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
                         
-                        
                         // Estimated background in gene reference and gene X channel
-                        double bgGeneRef = find_background(imgGeneRef, roiGeneRef);
-                        double bgGeneX = find_background(imgGeneX, roiGeneX);
+                        double bgGeneRef = 0, bgGeneX = 0;
+                        if (autoBackground) {
+                            bgGeneRef = find_backgroundAuto(imgGeneRef, cellsPop);
+                            bgGeneX = find_backgroundAuto(imgGeneX, cellsPop);
+                        }
+                        else {
+                            bgGeneRef = find_background(imgGeneRef, roiGeneRef);
+                            bgGeneX = find_background(imgGeneX, roiGeneX);
+                        }
+                        
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
 

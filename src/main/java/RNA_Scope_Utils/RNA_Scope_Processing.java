@@ -1,6 +1,7 @@
 package RNA_Scope_Utils;
 
 
+import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.maxNucVol;
 import static RNA_Scope.RNA_Scope.minNucVol;
@@ -13,7 +14,6 @@ import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.WindowManager;
 import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
@@ -22,9 +22,7 @@ import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
-import ij.plugin.ZProjector;
 import ij.plugin.filter.Analyzer;
-import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
 import java.awt.Font;
@@ -91,6 +89,7 @@ public class RNA_Scope_Processing {
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
         gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
+        gd.addCheckbox("Auto background ", autoBackground);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
             gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
@@ -106,6 +105,7 @@ public class RNA_Scope_Processing {
         removeSlice = (int)gd.getNextNumber();
         singleDotIntGeneRef = gd.getNextNumber();
         singleDotIntGeneX = gd.getNextNumber();
+        autoBackground = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
             cal.pixelDepth = gd.getNextNumber();
@@ -447,7 +447,23 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
-
+    /*
+    * Auto Mean background intensity
+    */
+    public static double find_backgroundAuto(ImagePlus img, Objects3DPopulation cellsPop) {
+        Objects3DPopulation dilCellsPop = new Objects3DPopulation();
+        for (int o = 0; o < cellsPop.getNbObjects(); o++) {
+            Object3D obj = cellsPop.getObject(o);
+            dilCellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil)));
+        }
+        ImageHandler imgCells = ImageHandler.wrap(img).duplicate();
+        dilCellsPop.draw(imgCells, 0);
+        double bgIntAuto = find_background(imgCells.getImagePlus(), null);
+        imgCells.closeImagePlus();
+        return(bgIntAuto);
+    }
+    
+    
     /*
     * Mean background intensity
     */
@@ -462,12 +478,15 @@ public class RNA_Scope_Processing {
         for (int z = 1; z <= imgCrop.getNSlices(); z++) {
             imgCrop.setSlice(z);
             ana.measure();
-            intDen += rt.getValue("intDen", index);
+            intDen += rt.getValue("IntDen", index);
             area += rt.getValue("Area", index);
             index++;
         }
         double bgInt = intDen / area;
-        System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
+        if (roi != null)
+            System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
+        else
+            System.out.println("Auto Mean Background = " + bgInt);
         closeImages(imgCrop);
         return(bgInt);  
     }
