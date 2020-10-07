@@ -617,12 +617,13 @@ public class RNA_Scope_Processing {
         ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
         ImageHandler imgDotsGeneRef = ImageHandler.wrap(imgNuc).createSameDimensions();
         ImageHandler imgDotsGeneX = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImageHandler imgCellNumbers = ImageHandler.wrap(imgNuc).createSameDimensions();
         // draw nucleus dots population
         cellsPop.draw(imgCells, 255);
-        labelsObject(cellsPop, imgCells.getImagePlus(), 24);
+        labelsObject(cellsPop, imgCellNumbers.getImagePlus(), 24);
         geneRefPop.draw(imgDotsGeneRef, 255);
         geneXPop.draw(imgDotsGeneX, 255);
-        ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), null, null, imgCells.getImagePlus()};
+        ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), imgCells.getImagePlus(), null, imgCellNumbers.getImagePlus()};
         ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
         imgObjects.setCalibration(cal);
         IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
