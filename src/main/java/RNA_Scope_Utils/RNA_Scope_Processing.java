@@ -472,17 +472,17 @@ public class RNA_Scope_Processing {
             img.setRoi(roi);
         ImagePlus imgCrop = img.crop();
         ResultsTable rt = new ResultsTable();
-        Analyzer ana = new Analyzer(imgCrop, Measurements.AREA + Measurements.INTEGRATED_DENSITY, rt);
+        Analyzer ana = new Analyzer(imgCrop, Measurements.INTEGRATED_DENSITY, rt);
         double intDen = 0, area = 0; 
         int index = 0;
         for (int z = 1; z <= imgCrop.getNSlices(); z++) {
             imgCrop.setSlice(z);
             ana.measure();
-            intDen += rt.getValue("IntDen", index);
-            area += rt.getValue("Area", index);
+            intDen += rt.getValue("RawIntDen", index);
             index++;
         }
-        double bgInt = intDen / area;
+        double vol = imgCrop.getWidth()*imgCrop.getHeight()*imgCrop.getNSlices();
+        double bgInt = intDen / vol;
         if (roi != null)
             System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
         else
