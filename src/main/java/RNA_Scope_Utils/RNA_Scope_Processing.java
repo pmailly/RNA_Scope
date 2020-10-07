@@ -624,6 +624,7 @@ public class RNA_Scope_Processing {
         ImageHandler imgDotsGeneX = ImageHandler.wrap(imgNuc).createSameDimensions();
         // draw nucleus dots population
         cellsPop.draw(imgCells, 255);
+        labelsObject(geneXPop, imgCells.getImagePlus(), 12);
         geneRefPop.draw(imgDotsGeneRef, 255);
         geneXPop.draw(imgDotsGeneX, 255);
         ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), imgCells.getImagePlus()};
