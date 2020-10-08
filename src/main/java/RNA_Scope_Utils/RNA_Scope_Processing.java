@@ -3,6 +3,8 @@ package RNA_Scope_Utils;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
+import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.pixDepth;
 import static RNA_Scope.RNA_Scope.maxNucVol;
 import static RNA_Scope.RNA_Scope.minNucVol;
 import static RNA_Scope.RNA_Scope.nucDil;
@@ -62,7 +64,6 @@ import org.xml.sax.SAXException;
 
 public class RNA_Scope_Processing {
     
-    private static double pixDepth  = 1;
     public static CLIJ2 clij2 = CLIJ2.getInstance();
 
     
@@ -71,7 +72,7 @@ public class RNA_Scope_Processing {
      * @param channels
      * @param showCal
      * @param cal
-     * @return ch    private boolean showCal = false;
+     * @return ch
 
      */
     public static ArrayList dialog(String[] channels, boolean showCal, Calibration cal) {
@@ -252,10 +253,16 @@ public class RNA_Scope_Processing {
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
-        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
-        clij2.release(imgCLMed);
-        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
-        clij2.release(imgCLDOG);
+        ClearCLBuffer imgCLBin;
+        if (!deconv) {
+            ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
+            clij2.release(imgCLMed);
+            imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+            clij2.release(imgCLDOG);
+        }
+        else {
+            imgCLBin = threshold(imgCLMed, "IsoData", false); 
+        }
         ClearCLBuffer imgCLBinOpen = open(imgCLBin); 
         clij2.release(imgCLBin);
         Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBinOpen);

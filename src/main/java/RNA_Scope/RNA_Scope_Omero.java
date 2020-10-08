@@ -7,7 +7,7 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.imageExt;
+import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
 import static RNA_Scope.RNA_Scope.rootName;
@@ -82,11 +82,16 @@ public class RNA_Scope_Omero implements PlugIn {
             InitResults(outDirResults);
             
             for (ImageData image : imageData) {
-                if (image.getName().contains(imageExt)) {
+                if (image.getName().endsWith(".nd") || image.getName().endsWith(".ics")) {
+                        if (image.getName().endsWith(".nd"))
+                            rootName = image.getName().replace(".nd", "");
+                        else {
+                            rootName = image.getName().replace(".ics", "");
+                            deconv = true;
+                        }
                     PixelsData pixels = image.getDefaultPixels();
                     int sizeZ = pixels.getSizeZ();
                     int sizeC = pixels.getSizeC();
-                    String rootName = image.getName().replace(imageExt, "");
                     MetadataFacility mf = gateway.getFacility(MetadataFacility.class);
                     String[] channels = new String[sizeC];
                     for(ChannelData chs : mf.getChannelData(securityContext, image.getId())) {

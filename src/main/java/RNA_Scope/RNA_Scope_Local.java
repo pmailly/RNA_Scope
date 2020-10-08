@@ -2,7 +2,7 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.imageExt;
+import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
@@ -50,7 +50,7 @@ import org.apache.commons.lang.ArrayUtils;
  */
 public class RNA_Scope_Local implements PlugIn {
     
-   
+private String imageExt = "";   
            
     @Override
     public void run(String arg) {
@@ -86,17 +86,26 @@ public class RNA_Scope_Local implements PlugIn {
                 ArrayList<String> ch = new ArrayList();
                 for (int i = 0; i < imageFile.length; i++) {
                     // Find nd files
-                    if (imageFile[i].endsWith(imageExt)) {
+                    if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
+                        if (imageFile[i].endsWith(".nd"))
+                            rootName = imageFile[i].replace(".nd", "");
+                        else {
+                            rootName = imageFile[i].replace(".ics", "");
+                            deconv = true;
+                        }
                         String imageName = inDir+ File.separator+imageFile[i];
                         rootName = imageFile[i].replace(imageExt, "");
                         reader.setId(imageName);
                         int sizeZ = reader.getSizeZ();
+                        int sizeC = reader.getSizeC();
+                        String[] channels = new String[sizeC];
                         imageNum++;
                         boolean showCal = false;
-                        String channelsID = meta.getImageName(0);
-                        if (!channelsID.contains("CSU"))
-                            channelsID =  "CSU_405/CSU_488/CSU_561/CSU_642";
-                        String[] channels = channelsID.replace("_", "-").split("/");
+                        if (!deconv)
+                            channels =  "CSU_405/CSU_488/CSU_561/CSU_642".replace("_", "-").split("/");
+                        else 
+                            for (int c = 0; c < sizeC; c++) 
+                                channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
                         // Check calibration
                         if (imageNum == 1) {
                             cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();

@@ -5,15 +5,18 @@
 package RNA_Scope;
 
 
-import static RNA_Scope.RNA_Scope.cal;
+import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.output_detail_Analyze;
+import static RNA_Scope.RNA_Scope.rootName;
+import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
+import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
-import static RNA_Scope_Utils.RNA_Scope_Processing.labelsObject;
+import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -22,6 +25,8 @@ import ij.plugin.PlugIn;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -29,6 +34,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,6 +80,34 @@ private final Calibration cal = new Calibration();
         }
         System.out.println("Raw Int Den = " + intDen);
         return(intDen);  
+    }
+    
+    /**
+     * Dialog ask for channels order
+     * @param channels
+     * @return ch
+     */
+    public static ArrayList dialog(String[] channels) {
+        ArrayList ch = new ArrayList();
+        GenericDialogPlus gd = new GenericDialogPlus("Parameters");
+        gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
+        gd.addChoice("DAPI           : ", channels, channels[0]);
+        gd.addChoice("Gene Reference : ", channels, channels[1]);
+        gd.addChoice("Gene X         : ", channels, channels[2]);
+        gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
+        gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
+        gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
+        
+        gd.showDialog();
+        ch.add(0, gd.getNextChoice());
+        ch.add(1, gd.getNextChoice());
+        ch.add(2, gd.getNextChoice());
+        singleDotIntGeneRef = gd.getNextNumber();
+        singleDotIntGeneX = gd.getNextNumber();
+        
+        if(gd.wasCanceled())
+            ch = null;
+        return(ch);
     }
     
     /**
@@ -135,19 +169,29 @@ private final Calibration cal = new Calibration();
             reader.setMetadataStore(meta);
             Arrays.sort(imageFile);
             int imageNum = 0; 
-            String imageExt = "nd";
             String rootName = "";
+            ArrayList<String> ch = new ArrayList();
             for (int i = 0; i < imageFile.length; i++) {
                 // Find nd files
-                if (imageFile[i].endsWith(imageExt)) {
+                if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
+                    if (imageFile[i].endsWith(".nd"))
+                        rootName = imageFile[i].replace(".nd", "");
+                    else {
+                        rootName = imageFile[i].replace(".ics", "");
+                        deconv = true;
+                    }
                     String imageName = inDir+ File.separator+imageFile[i];
-                    rootName = imageFile[i].replace("."+ imageExt, "");
                     reader.setId(imageName);
                     int sizeZ = reader.getSizeZ();
+                    int sizeC = reader.getSizeC();
+                    String[] channels = new String[sizeC];
                     imageNum++;
-                    String channelsID = meta.getImageName(0);
-                    if (!channelsID.contains("CSU"))
-                       channelsID =  "CSU_405/CSU_488/CSU_561/CSU_642";
+                    if (!deconv)
+                        channels =  "CSU_405/CSU_488/CSU_561/CSU_642".replace("_", "-").split("/");
+                    else 
+                        for (int c = 0; c < sizeC; c++) 
+                            channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
+                    
                     // Check calibration
                     if (imageNum == 1) {
                         cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();
@@ -155,12 +199,19 @@ private final Calibration cal = new Calibration();
                         cal.pixelDepth = meta.getPixelsPhysicalSizeZ(0).value().doubleValue();
                         cal.setUnit("microns");
                         System.out.println("x/y cal = " +cal.pixelWidth+", z cal = " + cal.pixelDepth+", stack size = "+sizeZ);
-
+                        
+                        // return the index for channels DAPI, Astro, Dots and ask for calibration if needed
+                        ch = dialog(channels);
+                        if (ch == null) {
+                            IJ.showStatus("Plugin cancelled !!!");
+                            return;
+                        }
                         
                         // write headers
-                        output_Analyze.write("Image Name\tGene ref. integrated intensity\tDots gene ref. integrated intensity\tGene ref. mean background intensity"
-                                + "\tGene ref. corrected Intensity\tDots gene ref. corrected Intensity\tGene X integrated intensity\tDots gene X integrated intensity"
-                                + "\tGene X mean background intensity\tGene X corrected intensity\tDots gene X corrected intensity\n");
+                        output_Analyze.write("Image Name\tCells Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
+                            + "Total dots gene ref. (based on cells intensity)\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
+                            + "Total dots gene ref (based on dots seg intensity)\tCells Integrated intensity in gene X channel\tMean background intensity in X channel\t"
+                            + "Total dots gene X (based on cells intensity)\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)\n");
                         output_Analyze.flush();
                     }
                     
@@ -254,8 +305,9 @@ private final Calibration cal = new Calibration();
                         
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
-                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor+"\t"+geneRefDotsIntCor+"\t"+geneXInt
-                                +"\t"+geneXBgInt+"\t"+geneXIntCor+"\t"+geneXDotsIntCor+"\n");
+                        
+                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt
+                                +"\t"+geneXBgInt+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
                         output_Analyze.flush();
                     }
                 }

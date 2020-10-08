@@ -6,6 +6,8 @@
 package RNA_Scope;
 
 
+import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Dot;
 import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
@@ -165,16 +167,19 @@ private static BufferedWriter output_dotCalib;
             
             Arrays.sort(imageFile);
             int imageNum = 0; 
-            String imageExt = "tif";
             String rootName = "";
             ArrayList<String> ch = new ArrayList<>();
             for (int i = 0; i < imageFile.length; i++) {
-                // Find tif files
-                if (imageFile[i].endsWith(imageExt)) {
+                // Find tif files no dconv TIF deconv
+                if (imageFile[i].endsWith(".TIF") || imageFile[i].endsWith(".tif")) {
+                    if (imageFile[i].endsWith(".tif"))
+                        rootName = imageFile[i].replace(".tif", "");
+                    else {
+                        rootName = imageFile[i].replace(".TIF", "");
+                        deconv = true;
+                    }
                     String imageName = inDir+ File.separator+imageFile[i];
-                    rootName = imageFile[i].replace("."+imageExt, "");
                     imageNum++;
-                    boolean showCal = false;
                     
                     // Check calibration
                     if (imageNum == 1) {
