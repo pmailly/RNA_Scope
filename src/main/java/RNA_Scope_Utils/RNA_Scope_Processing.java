@@ -332,9 +332,7 @@ public class RNA_Scope_Processing {
             
             // dots number based on dots segmented intensity
             int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * geneRefDotsVol) / singleDotIntGeneRef));
-            //int nbGeneRefDotsSegInt = Math.round((float)(geneRefDotsInt / singleDotIntGeneRef));
             int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * geneXDotsVol) / singleDotIntGeneX));
-            //int nbGeneXDotsSegInt = Math.round((float)(geneXDotsInt / singleDotIntGeneX));
             
             Cell cell = new Cell(index, cellVol, cellGeneRefInt, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
                     geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
@@ -473,7 +471,7 @@ public class RNA_Scope_Processing {
         ImagePlus imgCrop = img.crop();
         ResultsTable rt = new ResultsTable();
         Analyzer ana = new Analyzer(imgCrop, Measurements.INTEGRATED_DENSITY, rt);
-        double intDen = 0, area = 0; 
+        double intDen = 0;
         int index = 0;
         for (int z = 1; z <= imgCrop.getNSlices(); z++) {
             imgCrop.setSlice(z);
@@ -501,10 +499,7 @@ public class RNA_Scope_Processing {
         String name;
         for (int n = 0; n < popObj.getNbObjects(); n++) {
             Object3D obj = popObj.getObject(n);
-            if ("".equals(obj.getName())) 
-                name = Integer.toString(n+1);
-            else
-                name = Integer.toString(n+1)+"*";
+            name = Integer.toString(n+1);
             int[] box = obj.getBoundingBox();
             int z = (int)obj.getCenterZ();
             int x = box[0] - 2;
@@ -622,12 +617,13 @@ public class RNA_Scope_Processing {
         ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();
         ImageHandler imgDotsGeneRef = ImageHandler.wrap(imgNuc).createSameDimensions();
         ImageHandler imgDotsGeneX = ImageHandler.wrap(imgNuc).createSameDimensions();
+        ImageHandler imgCellNumbers = ImageHandler.wrap(imgNuc).createSameDimensions();
         // draw nucleus dots population
         cellsPop.draw(imgCells, 255);
-        labelsObject(geneXPop, imgCells.getImagePlus(), 12);
+        labelsObject(cellsPop, imgCellNumbers.getImagePlus(), 24);
         geneRefPop.draw(imgDotsGeneRef, 255);
         geneXPop.draw(imgDotsGeneX, 255);
-        ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), imgCells.getImagePlus()};
+        ImagePlus[] imgColors = {imgDotsGeneRef.getImagePlus(), imgDotsGeneX.getImagePlus(), imgCells.getImagePlus(), null, imgCellNumbers.getImagePlus()};
         ImagePlus imgObjects = new RGBStackMerge().mergeHyperstacks(imgColors, false);
         imgObjects.setCalibration(cal);
         IJ.run(imgObjects, "Enhance Contrast", "saturated=0.35");
