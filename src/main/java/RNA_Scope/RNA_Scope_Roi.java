@@ -6,8 +6,6 @@ package RNA_Scope;
 
 
 import static RNA_Scope.RNA_Scope.deconv;
-import static RNA_Scope.RNA_Scope.output_detail_Analyze;
-import static RNA_Scope.RNA_Scope.rootName;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
@@ -172,10 +170,12 @@ private final Calibration cal = new Calibration();
             String rootName = "";
             ArrayList<String> ch = new ArrayList();
             for (int i = 0; i < imageFile.length; i++) {
-                // Find nd files
+                // Find images files
                 if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
-                    if (imageFile[i].endsWith(".nd"))
+                    if (imageFile[i].endsWith(".nd")) {
                         rootName = imageFile[i].replace(".nd", "");
+                        deconv = false;
+                    }
                     else {
                         rootName = imageFile[i].replace(".ics", "");
                         deconv = true;
@@ -185,9 +185,9 @@ private final Calibration cal = new Calibration();
                     int sizeZ = reader.getSizeZ();
                     int sizeC = reader.getSizeC();
                     String[] channels = new String[sizeC];
-                    imageNum++;
+                    String channelsID = meta.getImageName(0);
                     if (!deconv)
-                        channels =  "CSU_405/CSU_488/CSU_561/CSU_642".replace("_", "-").split("/");
+                        channels = channelsID.replace("_", "-").split("/");
                     else 
                         for (int c = 0; c < sizeC; c++) 
                             channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
@@ -251,14 +251,13 @@ private final Calibration cal = new Calibration();
                             options.setCropRegion(0, reg);
                             
                             
-                            
                             // gene reference
                             if (roiName.contains("ref")) {
                                 // Open Gene reference channel
                                 System.out.println("Opening reference gene channel ...");
                                 imgGeneRef = BF.openImagePlus(options)[0];
                                 if (roiName.contains("bg")) 
-                                    geneRefBgInt = find_background(imgGeneRef, null);
+                                    geneRefBgInt = find_background(imgGeneRef, null, 1, imgGeneRef.getNSlices());
                                 else {
                                     geneRefInt = find_Integrated(imgGeneRef);
                                     geneRefVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
@@ -275,7 +274,7 @@ private final Calibration cal = new Calibration();
                                 System.out.println("Opening X gene channel ...");
                                 imgGeneX = BF.openImagePlus(options)[1];
                                 if (roiName.contains("bg")) 
-                                    geneXBgInt = find_background(imgGeneX, null);
+                                    geneXBgInt = find_background(imgGeneX, null, 1, imgGeneX.getNSlices());
                                 else {
                                     geneXInt = find_Integrated(imgGeneX);
                                     geneXVol = imgGeneX.getNSlices()*imgGeneX.getWidth()*imgGeneX.getHeight();

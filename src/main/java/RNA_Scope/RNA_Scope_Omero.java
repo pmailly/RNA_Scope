@@ -10,6 +10,7 @@ import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
@@ -83,8 +84,10 @@ public class RNA_Scope_Omero implements PlugIn {
             
             for (ImageData image : imageData) {
                 if (image.getName().endsWith(".nd") || image.getName().endsWith(".ics")) {
-                        if (image.getName().endsWith(".nd"))
+                        if (image.getName().endsWith(".nd")) {
                             rootName = image.getName().replace(".nd", "");
+                            deconv = false;
+                        }
                         else {
                             rootName = image.getName().replace(".ics", "");
                             deconv = true;
@@ -181,16 +184,12 @@ public class RNA_Scope_Omero implements PlugIn {
                         // Estimated background in gene reference and gene X channel
                         double bgGeneRef = 0, bgGeneX = 0;
                         if (autoBackground) {
-                            bgGeneRef = find_backgroundAuto(imgGeneRef, cellsPop);
-                            bgGeneX = find_backgroundAuto(imgGeneX, cellsPop);
-                        }
-                        else {
-                            bgGeneRef = find_background(imgGeneRef, roiGeneRef);
-                            bgGeneX = find_background(imgGeneX, roiGeneX);
+                            roiGeneRef = find_backgroundAuto(imgGeneRef, geneRefDots, roiBgSize);
+                            roiGeneX = find_backgroundAuto(imgGeneX, geneXDots, roiBgSize);
                         }
                         
                         // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
 
 
                        // write results for each cell population

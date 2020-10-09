@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
  *
  * @author phm
  */
-public class RNA_Scope_Calib implements PlugIn {
+public class RNA_Scope_CalibGhost implements PlugIn {
 
 private String imageDir = "";
 private String outDirResults = "";
@@ -142,7 +142,7 @@ private static BufferedWriter output_dotCalib;
             int imageNum = 0; 
             String rootName = "";
             ArrayList<String> ch = new ArrayList<>();
-            ghostDots = false;
+            ghostDots = true;
             for (int i = 0; i < imageFile.length; i++) {
                 // Find tif files no dconv TIF deconv
                 if (imageFile[i].endsWith(".TIF") || imageFile[i].endsWith(".tif")) {
@@ -235,7 +235,7 @@ private static BufferedWriter output_dotCalib;
                 output_dotCalib.close();
             IJ.showStatus("Calibration done");
         } catch (IOException | ParserConfigurationException | SAXException ex) {
-            Logger.getLogger(RNA_Scope_Calib.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RNA_Scope_CalibGhost.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

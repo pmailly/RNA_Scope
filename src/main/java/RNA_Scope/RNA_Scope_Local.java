@@ -6,6 +6,7 @@ import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imagesFolder;
@@ -87,22 +88,24 @@ private String imageExt = "";
                 for (int i = 0; i < imageFile.length; i++) {
                     // Find nd files
                     if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
-                        if (imageFile[i].endsWith(".nd"))
+                        if (imageFile[i].endsWith(".nd")) {
                             rootName = imageFile[i].replace(".nd", "");
+                            deconv = false;
+                        }
                         else {
                             rootName = imageFile[i].replace(".ics", "");
                             deconv = true;
                         }
                         String imageName = inDir+ File.separator+imageFile[i];
-                        rootName = imageFile[i].replace(imageExt, "");
                         reader.setId(imageName);
                         int sizeZ = reader.getSizeZ();
                         int sizeC = reader.getSizeC();
                         String[] channels = new String[sizeC];
                         imageNum++;
                         boolean showCal = false;
+                        String channelsID = meta.getImageName(0);
                         if (!deconv)
-                            channels =  "CSU_405/CSU_488/CSU_561/CSU_642".replace("_", "-").split("/");
+                            channels = channelsID.replace("_", "-").split("/");
                         else 
                             for (int c = 0; c < sizeC; c++) 
                                 channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
@@ -190,16 +193,13 @@ private String imageExt = "";
                         // Estimated background in gene reference and gene X channel
                         double bgGeneRef = 0, bgGeneX = 0;
                         if (autoBackground) {
-                            bgGeneRef = find_backgroundAuto(imgGeneRef, cellsPop);
-                            bgGeneX = find_backgroundAuto(imgGeneX, cellsPop);
+                            roiGeneRef = find_backgroundAuto(imgGeneRef, geneRefDots, roiBgSize);
+                            roiGeneX = find_backgroundAuto(imgGeneX, geneXDots, roiBgSize);
                         }
-                        else {
-                            bgGeneRef = find_background(imgGeneRef, roiGeneRef);
-                            bgGeneX = find_background(imgGeneX, roiGeneX);
-                        }
+
                         
                         // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
 
                         // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
