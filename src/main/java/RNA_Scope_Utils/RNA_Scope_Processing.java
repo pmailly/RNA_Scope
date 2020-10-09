@@ -2,7 +2,6 @@ package RNA_Scope_Utils;
 
 
 import static RNA_Scope.RNA_Scope.autoBackground;
-import static RNA_Scope.RNA_Scope.bgBoxSize;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
@@ -12,6 +11,7 @@ import static RNA_Scope.RNA_Scope.minNucVol;
 import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import fiji.util.gui.GenericDialogPlus;
@@ -19,6 +19,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -97,7 +98,7 @@ public class RNA_Scope_Processing {
         gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
         gd.addMessage("Auto background", Font.getFont("Monospace"), Color.blue);
         gd.addCheckbox("Auto background ", autoBackground);
-        gd.addNumericField("Size of background boxe size : ", bgBoxSize, 0);
+        gd.addNumericField("Size of background box size : ", roiBgSize, 0);
         gd.addCheckbox("Remove ghost dots ", ghostDots);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
@@ -115,7 +116,7 @@ public class RNA_Scope_Processing {
         singleDotIntGeneRef = gd.getNextNumber();
         singleDotIntGeneX = gd.getNextNumber();
         autoBackground = gd.getNextBoolean();
-        bgBoxSize = gd.getNextNumber();
+        roiBgSize = (int)gd.getNextNumber();
         ghostDots = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
@@ -328,8 +329,10 @@ public class RNA_Scope_Processing {
             int cellMaxZ = cellObj.getZmax();
             
             // Cell background
+
             double bgGeneRef = find_background(imgGeneRef, roiBgGeneRef, cellMinZ, cellMaxZ);
             double bgGeneX = find_background(imgGeneX, roiBgGeneX, cellMinZ, cellMaxZ);
+
             
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
@@ -358,8 +361,8 @@ public class RNA_Scope_Processing {
             int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * geneRefDotsVol) / singleDotIntGeneRef));
             int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * geneXDotsVol) / singleDotIntGeneX));
             
-            Cell cell = new Cell(index, cellVol, cellGeneRefInt, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
-                    geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
+            Cell cell = new Cell(index, cellVol, cellGeneRefInt, bgGeneRef, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
+                    bgGeneX, geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
             cells.add(cell);
         }
         return(cells);
@@ -469,11 +472,58 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
+    /**
+     * 
+     * @param imgGene
+     * @param dotsPop
+     * @param size
+     * @return 
+     */
+    private static Roi findBgRoi(ImagePlus imgDotsProj, ImagePlus imgGeneProj, int size, int widthStop, int heightStop) {
+        // Find at least 5 roi without dot in roi
+        // measure mean intensity in gene Z projection image 
+        // take min intensity of rois found
+        Roi roiBg = null;
+        ArrayList<Double> intBgFound = new ArrayList();
+        ArrayList<Roi> bgRoiFound = new ArrayList();
+        int bgCount = 0;
+        for (int x = 0; x < widthStop; x += size) {
+            for (int y = 0; y < heightStop; y += size) {
+                Roi roi = new Roi(x, y, size, size);
+                imgDotsProj.setRoi(roi);
+                imgDotsProj.updateAndDraw();
+                ImageProcessor ip = imgDotsProj.getProcessor();
+                ImageStatistics statsDots = ip.getStats();
+                // Find roi without dot inside
+                if (statsDots.max == 0) {
+                    imgGeneProj.setRoi(roi);
+                    imgGeneProj.updateAndDraw();
+                    ImageProcessor ipGene = imgGeneProj.getProcessor();
+                    ImageStatistics statsGene = ipGene.getStats();
+                    intBgFound.add(statsGene.mean);
+                    bgRoiFound.add(roi);
+                    bgCount++;
+                }
+                if (bgCount == 5)
+                    break;
+            }
+            if (bgCount == 5)
+                break;
+        }
+        int minIndex;
+        if (bgCount == 5) {
+            minIndex = intBgFound.indexOf(Collections.min(intBgFound));
+            roiBg = bgRoiFound.get(minIndex);
+            System.out.println(bgCount+" bg box found size =" + size+ " bg min = "+ intBgFound.get(minIndex));
+        }
+        return(roiBg);
+    }
+    
     /*
     * Auto background intensity
     * find roi outside dots population
     */
-    public static Roi find_backgroundAuto(ImagePlus imgGene, Objects3DPopulation dotsPop, int size) {
+    public static Roi find_backgroundAuto(ImagePlus imgGene, Objects3DPopulation dotsPop, int boxSize) {
         // Draw dots with 255 and do Z projection
         ImageHandler imgDots = ImageHandler.wrap(imgGene).createSameDimensions();
         dotsPop.draw(imgDots, 255);
@@ -482,55 +532,28 @@ public class RNA_Scope_Processing {
         dotsProj.doProjection();
         ImagePlus imgDotsProj = dotsProj.getProjection();
         imgDots.closeImagePlus();
-        
+        System.out.println(boxSize);
         // Do Z projection of gene image
         ZProjector geneProj = new ZProjector(imgGene);
-        geneProj.setMethod(ZProjector.MAX_METHOD);
+        geneProj.setMethod(ZProjector.AVG_METHOD);
         geneProj.doProjection();
         ImagePlus imgGeneProj = geneProj.getProjection();
         
-        // Find at least 5 roi without dot in roi
-        // measure mean intensity in gene Z projection image 
-        Roi roiBg = null;
-        boolean found = false;
-        ArrayList<Double> intBgFound = new ArrayList();
-        ArrayList<Roi> bgListFound = new ArrayList();
-        int bgCount = 0;
-        for (int x = 0; x < imgDotsProj.getWidth(); x += size) {
-            for (int y = 0; y < imgDotsProj.getHeight(); y += size) {
-                Roi roi = new Roi(x, y, size, size);
-                imgDotsProj.setRoi(roi);
-                ImageProcessor ip = imgDotsProj.getProcessor();
-                ImageStatistics statsDots = ip.getStats();
-                double dotsMax = statsDots.max;
-                // Find roi without dots inside
-                if (dotsMax == 0) {
-                    roiBg = imgDotsProj.getRoi();
-                    imgGeneProj.setRoi(roiBg);
-                    ImageProcessor ipGene = imgGeneProj.getProcessor();
-                    ImageStatistics statsGene = ip.getStats();
-                    intBgFound.add(statsGene.mean);
-                    bgListFound.add(roiBg);
-                    found = true;
-                    bgCount++;
-                    if (bgCount == 5)
-                        break;
-                }
-            }
-            if (bgCount == 5)
-                break;
+        Roi bgRoi = null;
+        while (bgRoi == null) {
+            int imgWidth = imgDotsProj.getWidth() - boxSize;
+            int imgHeight = imgDotsProj.getHeight() - boxSize;
+            bgRoi = findBgRoi(imgDotsProj, imgGeneProj, boxSize, imgWidth, imgHeight);
+            //resize 20% box 
+            boxSize = boxSize - boxSize*20/100;
+            System.out.println(boxSize);
         }
+        if (bgRoi == null) 
+            System.out.println("No roi found for automatic background ");
+        imgDotsProj.hide();
         closeImages(imgDotsProj);
         closeImages(imgGeneProj);
-        // if no roi found decrease the box size and restart
-        if (roiBg == null)
-            find_backgroundAuto(imgGene, dotsPop, size - 1);
-        // else find the roibox with min intensity
-        else {
-            int minIndex = intBgFound.indexOf(Collections.min(intBgFound));
-            roiBg = bgListFound.get(minIndex);
-        }
-        return(roiBg);
+        return(bgRoi);
     }
     
     /*
@@ -550,10 +573,11 @@ public class RNA_Scope_Processing {
             intDen += rt.getValue("RawIntDen", index);
             index++;
         }
-        double vol = imgCrop.getWidth()+imgCrop.getHeight()*imgCrop.getNSlices();
+        double vol = imgCrop.getWidth()+imgCrop.getHeight()* (zMax - zMin);
         double bgInt = intDen / vol;
         System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
         closeImages(imgCrop);
+        rt.reset();
         return(bgInt);  
     }
     

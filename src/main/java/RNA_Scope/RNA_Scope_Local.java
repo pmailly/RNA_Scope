@@ -130,23 +130,7 @@ private String imageExt = "";
                             }
                         }
                         
-                        // find roi file for background detection
-                        String roiFile = inDir+ File.separator + rootName + ".zip";
-                        if (!new File(roiFile).exists()) {
-                            IJ.showStatus("No roi file found !");
-                            return;
-                        }
-                        // Find roi for gene ref and gene X
-                        RoiManager rm = new RoiManager(false);
-                        rm.runCommand("Open", roiFile);
-                        Roi roiGeneRef = null, roiGeneX = null;
-                        for (int r = 0; r < rm.getCount(); r++) {
-                            Roi roi = rm.getRoi(r);
-                            if (roi.getName().equals("generef"))
-                                roiGeneRef = roi;
-                            else
-                                roiGeneX = roi;
-                        }
+
                         reader.setSeries(0);
                         ImporterOptions options = new ImporterOptions();
                         options.setColorMode(ImporterOptions.COLOR_MODE_GRAYSCALE);
@@ -160,21 +144,15 @@ private String imageExt = "";
                         options.setQuiet(true);
                         
                         /*
-                        * Open DAPI channel
-                        */
-                        int channelIndex = ArrayUtils.indexOf(channels, ch.get(0));
-                        System.out.println("-- Opening Nucleus channel : "+ ch.get(0));
-                        ImagePlus imgNuc = BF.openImagePlus(options)[channelIndex];
-                        
-                        // find nucleus population
-                        Objects3DPopulation cellsPop = findNucleus(imgNuc);
-                        
-                        /*
                         * Open Channel 1 (gene reference)
                         */
-                        channelIndex = ArrayUtils.indexOf(channels, ch.get(1));
+                        int channelIndex = ArrayUtils.indexOf(channels, ch.get(1));
                         System.out.println("-- Opening gene reference channel : "+ ch.get(1));
                         ImagePlus imgGeneRef = BF.openImagePlus(options)[channelIndex];
+                        
+                        // Find gene reference dots
+                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
+                        System.out.println("Finding gene "+geneRefDots.getNbObjects()+" reference dots");
                         
                         /*
                         * Open Channel 3 (gene X)
@@ -183,20 +161,49 @@ private String imageExt = "";
                         System.out.println("-- Opening gene X channel : " + ch.get(2));
                         ImagePlus imgGeneX = BF.openImagePlus(options)[channelIndex];
                         
-                        // Find gene reference dots
-                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
-                        
                         //Find gene X dots
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                        System.out.println("Finding gene "+geneXDots.getNbObjects()+" X dots");
                         
+                        Roi roiGeneRef = null, roiGeneX = null;
+                        
+                        // find roi file for background detection if no automatic detection
+                        if (!autoBackground) {
+                            String roiFile = inDir+ File.separator + rootName + ".zip";
+                            if (!new File(roiFile).exists()) {
+                                IJ.showStatus("No roi file found !");
+                                return;
+                            }
+                            // Find roi for gene ref and gene X
+                            RoiManager rm = new RoiManager(false);
+                            rm.runCommand("Open", roiFile);
+                        
+                            for (int r = 0; r < rm.getCount(); r++) {
+                                Roi roi = rm.getRoi(r);
+                                if (roi.getName().equals("generef"))
+                                    roiGeneRef = roi;
+                                else
+                                    roiGeneX = roi;
+                            }
+                        }
                         
                         // Estimated background in gene reference and gene X channel
-                        double bgGeneRef = 0, bgGeneX = 0;
-                        if (autoBackground) {
+                        
+                        else {
                             roiGeneRef = find_backgroundAuto(imgGeneRef, geneRefDots, roiBgSize);
                             roiGeneX = find_backgroundAuto(imgGeneX, geneXDots, roiBgSize);
                         }
 
+                        /*
+                        * Open DAPI channel
+                        */
+                        channelIndex = ArrayUtils.indexOf(channels, ch.get(0));
+                        System.out.println("-- Opening Nucleus channel : "+ ch.get(0));
+                        ImagePlus imgNuc = BF.openImagePlus(options)[channelIndex];
+                        
+                        // find nucleus population
+                        Objects3DPopulation cellsPop = findNucleus(imgNuc);
+                        
                         
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
@@ -204,8 +211,8 @@ private String imageExt = "";
                         // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
                             output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellGeneRefInt()
-                                    +"\t"+bgGeneRef+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
-                                    +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+bgGeneX+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
+                                    +"\t"+listCells.get(n).getCellGeneRefBgInt()+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
+                                    +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+listCells.get(n).getCellGeneXBgInt()+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
                                     +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getnbGeneXDotsSegInt()+"\n");
                             output_detail_Analyze.flush();                       
 
