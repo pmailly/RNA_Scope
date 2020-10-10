@@ -3,11 +3,15 @@ package RNA_Scope_Utils;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
+import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.ghostDots;
+import static RNA_Scope.RNA_Scope.pixDepth;
 import static RNA_Scope.RNA_Scope.maxNucVol;
 import static RNA_Scope.RNA_Scope.minNucVol;
 import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import fiji.util.gui.GenericDialogPlus;
@@ -15,6 +19,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -22,8 +27,10 @@ import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
+import ij.plugin.ZProjector;
 import ij.plugin.filter.Analyzer;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import java.awt.Color;
 import java.awt.Font;
 import java.io.BufferedWriter;
@@ -31,6 +38,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -62,7 +70,6 @@ import org.xml.sax.SAXException;
 
 public class RNA_Scope_Processing {
     
-    private static double pixDepth  = 1;
     public static CLIJ2 clij2 = CLIJ2.getInstance();
 
     
@@ -71,7 +78,7 @@ public class RNA_Scope_Processing {
      * @param channels
      * @param showCal
      * @param cal
-     * @return ch    private boolean showCal = false;
+     * @return ch
 
      */
     public static ArrayList dialog(String[] channels, boolean showCal, Calibration cal) {
@@ -89,7 +96,10 @@ public class RNA_Scope_Processing {
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
         gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
+        gd.addMessage("Auto background", Font.getFont("Monospace"), Color.blue);
         gd.addCheckbox("Auto background ", autoBackground);
+        gd.addNumericField("Size of background box size : ", roiBgSize, 0);
+        gd.addCheckbox("Remove ghost dots ", ghostDots);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
             gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
@@ -106,6 +116,8 @@ public class RNA_Scope_Processing {
         singleDotIntGeneRef = gd.getNextNumber();
         singleDotIntGeneX = gd.getNextNumber();
         autoBackground = gd.getNextBoolean();
+        roiBgSize = (int)gd.getNextNumber();
+        ghostDots = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
             cal.pixelDepth = gd.getNextNumber();
@@ -252,14 +264,22 @@ public class RNA_Scope_Processing {
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
-        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
-        clij2.release(imgCLMed);
-        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
-        clij2.release(imgCLDOG);
-        ClearCLBuffer imgCLBinOpen = open(imgCLBin); 
-        clij2.release(imgCLBin);
-        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBinOpen);
-        clij2.release(imgCLBinOpen);        
+        ClearCLBuffer imgCLBin;
+        if (!deconv) {
+            ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
+            clij2.release(imgCLMed);
+            imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+            clij2.release(imgCLDOG);
+        }
+        else {
+            imgCLBin = threshold(imgCLMed, "IsoData", false); 
+        }
+        Objects3DPopulation genePop = new Objects3DPopulation();
+        if (ghostDots)
+            genePop = getPopFromClearBuffer(open(imgCLBin)); 
+        else
+            genePop = getPopFromClearBuffer(imgCLBin);
+        clij2.release(imgCLBin);       
         return(genePop);
     }
     
@@ -288,24 +308,39 @@ public class RNA_Scope_Processing {
      */
     
     public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsRefPop, Objects3DPopulation dotsXPop, ImagePlus imgGeneRef,
-            ImagePlus imgGeneX, double bgGeneRef, double bgGeneX) {
+            ImagePlus imgGeneX, Roi roiBgGeneRef, Roi roiBgGeneX) {
+        
         IJ.showStatus("Finding cells with gene reference ...");
         ArrayList<Cell> cells = new ArrayList<>();
         ImageHandler imhRef = ImageHandler.wrap(imgGeneRef);
         ImageHandler imhX = ImageHandler.wrap(imgGeneX);
         int index = 0;
         
+        // crop image for background
+        imgGeneRef.setRoi(roiBgGeneRef);
+        ImagePlus imgGeneRefCrop = imgGeneRef.crop("stack");
+        imgGeneX.setRoi(roiBgGeneX);
+        ImagePlus imgGeneXCrop = imgGeneX.crop("stack");
+        
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
-            double cellVol, cellGeneRefInt, cellGeneXInt;
             double geneRefDotsVol = 0, geneXDotsVol = 0;
             double geneRefDotsInt = 0, geneXDotsInt = 0;
             
             // calculate cell parameters
             index++;
             Object3D cellObj = cellsPop.getObject(i);
-            cellVol = cellObj.getVolumePixels();
-            cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
-            cellGeneXInt = cellObj.getIntegratedDensity(imhX);
+            double cellVol = cellObj.getVolumePixels();
+            double cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
+            double cellGeneXInt = cellObj.getIntegratedDensity(imhX);
+            // due to dilatation
+            int cellMinZ = cellObj.getZmin() < 1 ? 1 : cellObj.getZmin();
+            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
+
+            // Cell background
+            double bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
+            double bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
+            //System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
+            //System.out.println("Mean Background  X = " + bgGeneX);
             
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
@@ -334,10 +369,12 @@ public class RNA_Scope_Processing {
             int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * geneRefDotsVol) / singleDotIntGeneRef));
             int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * geneXDotsVol) / singleDotIntGeneX));
             
-            Cell cell = new Cell(index, cellVol, cellGeneRefInt, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
-                    geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
+            Cell cell = new Cell(index, cellVol, cellGeneRefInt, bgGeneRef, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
+                    bgGeneX, geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
             cells.add(cell);
         }
+        closeImages(imgGeneRefCrop);
+        closeImages(imgGeneXCrop);
         return(cells);
     }
     
@@ -358,6 +395,7 @@ public class RNA_Scope_Processing {
             }
         else
             cellsPop.addObjects(nucPop.getObjectsList());
+        //cellsPop.removeObjectsTouchingBorders(imgNuc, true);
         return(cellsPop);
     }
     
@@ -445,49 +483,107 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
-    /*
-    * Auto Mean background intensity
-    */
-    public static double find_backgroundAuto(ImagePlus img, Objects3DPopulation cellsPop) {
-        Objects3DPopulation dilCellsPop = new Objects3DPopulation();
-        for (int o = 0; o < cellsPop.getNbObjects(); o++) {
-            Object3D obj = cellsPop.getObject(o);
-            dilCellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil)));
+    /**
+     * 
+     * @param imgGene
+     * @param dotsPop
+     * @param size
+     * @return 
+     */
+    private static Roi findBgRoi(ImagePlus imgDotsProj, ImagePlus imgGeneProj, int size, int widthStop, int heightStop) {
+        // Find at least 5 roi without dot in roi
+        // measure mean intensity in gene Z projection image 
+        // take min intensity of rois found
+        Roi roiBg = null;
+        ArrayList<Double> intBgFound = new ArrayList();
+        ArrayList<Roi> bgRoiFound = new ArrayList();
+        int bgCount = 0;
+        for (int x = 0; x < widthStop; x += size) {
+            for (int y = 0; y < heightStop; y += size) {
+                Roi roi = new Roi(x, y, size, size);
+                imgDotsProj.setRoi(roi);
+                ImageProcessor ip = imgDotsProj.getProcessor();
+                ImageStatistics statsDots = ip.getStats();
+                // Find roi without dot inside
+                if (statsDots.max == 0) {
+                    imgGeneProj.setRoi(roi);
+                    ImageProcessor ipGene = imgGeneProj.getProcessor();
+                    ImageStatistics statsGene = ipGene.getStats();
+                    intBgFound.add(statsGene.mean);
+                    bgRoiFound.add(roi);
+                    bgCount++;
+                }
+                if (bgCount == 5)
+                    break;
+            }
+            if (bgCount == 5)
+                break;
         }
-        ImageHandler imgCells = ImageHandler.wrap(img).duplicate();
-        dilCellsPop.draw(imgCells, 0);
-        double bgIntAuto = find_background(imgCells.getImagePlus(), null);
-        imgCells.closeImagePlus();
-        return(bgIntAuto);
+        int minIndex;
+        if (bgCount == 5) {
+            minIndex = intBgFound.indexOf(Collections.min(intBgFound));
+            roiBg = bgRoiFound.get(minIndex);
+            System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
+        }
+        return(roiBg);
     }
     
+    /*
+    * Auto background intensity
+    * find roi outside dots population
+    */
+    public static Roi find_backgroundAuto(ImagePlus imgGene, Objects3DPopulation dotsPop, int boxSize) {
+        // Draw dots with 255 and do Z projection
+        ImageHandler imgDots = ImageHandler.wrap(imgGene).createSameDimensions();
+        dotsPop.draw(imgDots, 255);
+        ZProjector dotsProj = new ZProjector(imgDots.getImagePlus());
+        dotsProj.setMethod(ZProjector.MAX_METHOD);
+        dotsProj.doProjection();
+        ImagePlus imgDotsProj = dotsProj.getProjection();
+        imgDots.closeImagePlus();
+        // Do Z projection of gene image
+        ZProjector geneProj = new ZProjector(imgGene);
+        geneProj.setMethod(ZProjector.AVG_METHOD);
+        geneProj.doProjection();
+        ImagePlus imgGeneProj = geneProj.getProjection();
+        
+        Roi bgRoi = null;
+        while (bgRoi == null) {
+            int imgWidth = imgDotsProj.getWidth() - boxSize;
+            int imgHeight = imgDotsProj.getHeight() - boxSize;
+            bgRoi = findBgRoi(imgDotsProj, imgGeneProj, boxSize, imgWidth, imgHeight);
+            //resize 20% box 
+            boxSize = boxSize - boxSize*20/100;
+        }
+        if (bgRoi == null) 
+            System.out.println("No roi found for automatic background ");
+        imgDotsProj.hide();
+        closeImages(imgDotsProj);
+        closeImages(imgGeneProj);
+        bgRoi.setName("auto");
+        return(bgRoi);
+    }
     
     /*
-    * Mean background intensity
+    * Get Mean of intensity in stack
     */
-    public static double find_background(ImagePlus img, Roi roi) {
-        if (roi != null)
-            img.setRoi(roi);
-        ImagePlus imgCrop = img.crop();
+    public static double find_background(ImagePlus img, int zMin, int zMax) {
         ResultsTable rt = new ResultsTable();
-        Analyzer ana = new Analyzer(imgCrop, Measurements.INTEGRATED_DENSITY, rt);
+        Analyzer ana = new Analyzer(img, Measurements.INTEGRATED_DENSITY, rt);
         double intDen = 0;
         int index = 0;
-        for (int z = 1; z <= imgCrop.getNSlices(); z++) {
-            imgCrop.setSlice(z);
+        for (int z = zMin; z <= zMax; z++) {
+            img.setSlice(z);
             ana.measure();
             intDen += rt.getValue("RawIntDen", index);
             index++;
         }
-        double vol = imgCrop.getWidth()*imgCrop.getHeight()*imgCrop.getNSlices();
+        double vol = img.getWidth() * img.getHeight() * (zMax - zMin + 1);
         double bgInt = intDen / vol;
-        if (roi != null)
-            System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
-        else
-            System.out.println("Auto Mean Background = " + bgInt);
-        closeImages(imgCrop);
+        rt.reset();
         return(bgInt);  
     }
+    
     
     /**
      * Label object
