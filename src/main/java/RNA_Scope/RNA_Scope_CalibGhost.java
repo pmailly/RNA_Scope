@@ -10,6 +10,7 @@ import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
 import RNA_Scope_Utils.Dot;
 import RNA_Scope_Utils.RNA_Scope_Processing;
+import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
 import ij.IJ;
 import ij.ImagePlus;
@@ -218,13 +219,16 @@ private static BufferedWriter output_dotCalib;
                         for (int r = 0; r < rm.getCount(); r++) {
                             Roi roi = rm.getRoi(r);
                             Dot dot = dots.get(r);
-                            double bgDotInt = find_background(img, roi, dot.getZmin(), dot.getZmax());
+                            img.setRoi(roi);
+                            ImagePlus imgCrop = img.crop("stack");
+                            double bgDotInt = find_background(imgCrop, dot.getZmin(), dot.getZmax());
                             double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
                             sumCorIntDots += corIntDot;
                             // write results
                             output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
                                     "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
                             output_dotCalib.flush();
+                            closeImages(imgCrop);
                         }
                         double MeanIntDot = sumCorIntDots / rm.getCount();
                         output_dotCalib.write("\t\t\t\t\t\t\t\t"+MeanIntDot+"\n");

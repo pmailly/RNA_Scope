@@ -86,7 +86,7 @@ private String imageExt = "";
                 int imageNum = 0;
                 ArrayList<String> ch = new ArrayList();
                 for (int i = 0; i < imageFile.length; i++) {
-                    // Find nd files
+                    // Find nd or ics files
                     if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
                         if (imageFile[i].endsWith(".nd")) {
                             rootName = imageFile[i].replace(".nd", "");

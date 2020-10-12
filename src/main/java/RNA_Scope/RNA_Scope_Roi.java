@@ -191,7 +191,7 @@ private final Calibration cal = new Calibration();
                     else 
                         for (int c = 0; c < sizeC; c++) 
                             channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
-                    
+                    imageNum++;
                     // Check calibration
                     if (imageNum == 1) {
                         cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();
@@ -257,7 +257,7 @@ private final Calibration cal = new Calibration();
                                 System.out.println("Opening reference gene channel ...");
                                 imgGeneRef = BF.openImagePlus(options)[0];
                                 if (roiName.contains("bg")) 
-                                    geneRefBgInt = find_background(imgGeneRef, null, 1, imgGeneRef.getNSlices());
+                                    geneRefBgInt = find_background(imgGeneRef, 1, imgGeneRef.getNSlices());
                                 else {
                                     geneRefInt = find_Integrated(imgGeneRef);
                                     geneRefVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
@@ -274,7 +274,7 @@ private final Calibration cal = new Calibration();
                                 System.out.println("Opening X gene channel ...");
                                 imgGeneX = BF.openImagePlus(options)[1];
                                 if (roiName.contains("bg")) 
-                                    geneXBgInt = find_background(imgGeneX, null, 1, imgGeneX.getNSlices());
+                                    geneXBgInt = find_background(imgGeneX, 1, imgGeneX.getNSlices());
                                 else {
                                     geneXInt = find_Integrated(imgGeneX);
                                     geneXVol = imgGeneX.getNSlices()*imgGeneX.getWidth()*imgGeneX.getHeight();
@@ -305,8 +305,9 @@ private final Calibration cal = new Calibration();
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
                         
-                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt
-                                +"\t"+geneXBgInt+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
+                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+(geneRefIntCor/singleDotIntGeneRef)+"\t"+geneRefDotsVol+"\t"+geneRefDotsInt+"\t"+
+                                (geneRefDotsIntCor/singleDotIntGeneRef)+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+(geneXIntCor/singleDotIntGeneX)+"\t"+geneXDotsVol+"\t"+geneXDotsInt+"\t"+
+                                (geneXDotsIntCor/singleDotIntGeneX)+"\n");
                         output_Analyze.flush();
                     }
                 }

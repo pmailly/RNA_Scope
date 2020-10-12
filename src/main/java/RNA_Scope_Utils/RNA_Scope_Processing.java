@@ -19,7 +19,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -39,12 +38,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Object3D;
+import mcib3d.geom.Object3DVoxels;
+import mcib3d.geom.Object3D_IJUtils;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.geom.Point3D;
+import mcib3d.geom.Voxel3D;
 import mcib3d.image3d.ImageFloat;
 import mcib3d.image3d.ImageHandler;
 import mcib3d.image3d.ImageInt;
@@ -309,11 +312,18 @@ public class RNA_Scope_Processing {
     
     public static ArrayList<Cell> tagsCells(Objects3DPopulation cellsPop, Objects3DPopulation dotsRefPop, Objects3DPopulation dotsXPop, ImagePlus imgGeneRef,
             ImagePlus imgGeneX, Roi roiBgGeneRef, Roi roiBgGeneX) {
+        
         IJ.showStatus("Finding cells with gene reference ...");
         ArrayList<Cell> cells = new ArrayList<>();
         ImageHandler imhRef = ImageHandler.wrap(imgGeneRef);
         ImageHandler imhX = ImageHandler.wrap(imgGeneX);
         int index = 0;
+        
+        // crop image for background
+        imgGeneRef.setRoi(roiBgGeneRef);
+        ImagePlus imgGeneRefCrop = imgGeneRef.crop("stack");
+        imgGeneX.setRoi(roiBgGeneX);
+        ImagePlus imgGeneXCrop = imgGeneX.crop("stack");
         
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             double geneRefDotsVol = 0, geneXDotsVol = 0;
@@ -325,14 +335,15 @@ public class RNA_Scope_Processing {
             double cellVol = cellObj.getVolumePixels();
             double cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
             double cellGeneXInt = cellObj.getIntegratedDensity(imhX);
-            int cellMinZ = cellObj.getZmin();
-            int cellMaxZ = cellObj.getZmax();
-            
+            // due to dilatation
+            int cellMinZ = cellObj.getZmin() < 1 ? 1 : cellObj.getZmin();
+            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
+
             // Cell background
-
-            double bgGeneRef = find_background(imgGeneRef, roiBgGeneRef, cellMinZ, cellMaxZ);
-            double bgGeneX = find_background(imgGeneX, roiBgGeneX, cellMinZ, cellMaxZ);
-
+            double bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
+            double bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
+            //System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
+            //System.out.println("Mean Background  X = " + bgGeneX);
             
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
@@ -365,8 +376,29 @@ public class RNA_Scope_Processing {
                     bgGeneX, geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
             cells.add(cell);
         }
+        closeImages(imgGeneRefCrop);
+        closeImages(imgGeneXCrop);
         return(cells);
     }
+    
+    /**
+     * Return dilated object restriced to image borders
+     * @param img
+     * @param obj
+     * @return 
+     */
+    private static Object3DVoxels dilCellObj(ImagePlus img, Object3D obj) {
+        Object3D objDil = obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil));
+        // check if object go outside image
+        if (objDil.getXmin() < 0 || objDil.getXmax() > img.getWidth() || objDil.getYmin() < 0 || objDil.getYmax() > img.getHeight()
+                || objDil.getZmin() < 0 || objDil.getZmax() > img.getNSlices()) {
+            Object3DVoxels voxObj = new Object3DVoxels(objDil.listVoxels(ImageHandler.wrap(img)));
+            return(voxObj);
+        }
+        else
+            return(objDil.getObject3DVoxels());
+    }
+    
     
     public static  Objects3DPopulation findNucleus(ImagePlus imgNuc) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
@@ -381,7 +413,8 @@ public class RNA_Scope_Processing {
         if (nucDil != 0)
             for (int o = 0; o < nucPop.getNbObjects(); o++) {
                 Object3D obj = nucPop.getObject(o);
-                cellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil)));
+                //cellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil)));
+                cellsPop.addObject(dilCellObj(imgNuc, obj));
             }
         else
             cellsPop.addObjects(nucPop.getObjectsList());
@@ -491,13 +524,11 @@ public class RNA_Scope_Processing {
             for (int y = 0; y < heightStop; y += size) {
                 Roi roi = new Roi(x, y, size, size);
                 imgDotsProj.setRoi(roi);
-                imgDotsProj.updateAndDraw();
                 ImageProcessor ip = imgDotsProj.getProcessor();
                 ImageStatistics statsDots = ip.getStats();
                 // Find roi without dot inside
                 if (statsDots.max == 0) {
                     imgGeneProj.setRoi(roi);
-                    imgGeneProj.updateAndDraw();
                     ImageProcessor ipGene = imgGeneProj.getProcessor();
                     ImageStatistics statsGene = ipGene.getStats();
                     intBgFound.add(statsGene.mean);
@@ -514,7 +545,7 @@ public class RNA_Scope_Processing {
         if (bgCount == 5) {
             minIndex = intBgFound.indexOf(Collections.min(intBgFound));
             roiBg = bgRoiFound.get(minIndex);
-            System.out.println(bgCount+" bg box found size =" + size+ " bg min = "+ intBgFound.get(minIndex));
+            System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
         }
         return(roiBg);
     }
@@ -532,7 +563,6 @@ public class RNA_Scope_Processing {
         dotsProj.doProjection();
         ImagePlus imgDotsProj = dotsProj.getProjection();
         imgDots.closeImagePlus();
-        System.out.println(boxSize);
         // Do Z projection of gene image
         ZProjector geneProj = new ZProjector(imgGene);
         geneProj.setMethod(ZProjector.AVG_METHOD);
@@ -546,37 +576,32 @@ public class RNA_Scope_Processing {
             bgRoi = findBgRoi(imgDotsProj, imgGeneProj, boxSize, imgWidth, imgHeight);
             //resize 20% box 
             boxSize = boxSize - boxSize*20/100;
-            System.out.println(boxSize);
         }
         if (bgRoi == null) 
             System.out.println("No roi found for automatic background ");
         imgDotsProj.hide();
         closeImages(imgDotsProj);
         closeImages(imgGeneProj);
+        bgRoi.setName("auto");
         return(bgRoi);
     }
     
     /*
     * Get Mean of intensity in stack
     */
-    public static double find_background(ImagePlus img, Roi roi, int zMin, int zMax) {
-        if (roi != null)
-            img.setRoi(roi);
-        ImagePlus imgCrop = new Duplicator().run(img);
+    public static double find_background(ImagePlus img, int zMin, int zMax) {
         ResultsTable rt = new ResultsTable();
-        Analyzer ana = new Analyzer(imgCrop, Measurements.INTEGRATED_DENSITY, rt);
+        Analyzer ana = new Analyzer(img, Measurements.INTEGRATED_DENSITY, rt);
         double intDen = 0;
         int index = 0;
         for (int z = zMin; z <= zMax; z++) {
-            imgCrop.setSlice(z);
+            img.setSlice(z);
             ana.measure();
             intDen += rt.getValue("RawIntDen", index);
             index++;
         }
-        double vol = imgCrop.getWidth()+imgCrop.getHeight()* (zMax - zMin);
+        double vol = img.getWidth() * img.getHeight() * (zMax - zMin + 1);
         double bgInt = intDen / vol;
-        System.out.println("Mean Background for "+roi.getName() + " = " + bgInt);
-        closeImages(imgCrop);
         rt.reset();
         return(bgInt);  
     }

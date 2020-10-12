@@ -48,7 +48,7 @@ public class Cell {
     private int nbGeneXDotsSegInt;
    
 	
-	public Cell(int index, double cellVol, double cellGeneRefInt, double cellGeneRefBgIntdouble, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
+	public Cell(int index, double cellVol, double cellGeneRefInt, double cellGeneRefBgInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
                 int nbGeneRefDotsSegInt, double cellGeneXInt, double cellGeneXBgInt, double geneXDotsVol, double geneXDotsInt, int nbGeneXDotsCellInt, int nbGeneXDotsSegInt) {
             this.index = index;
             this.cellVol = cellVol;
