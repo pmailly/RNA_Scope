@@ -304,10 +304,9 @@ private final Calibration cal = new Calibration();
                         
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
-                        
-                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+(geneRefIntCor/singleDotIntGeneRef)+"\t"+geneRefDotsVol+"\t"+geneRefDotsInt+"\t"+
-                                (geneRefDotsIntCor/singleDotIntGeneRef)+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+(geneXIntCor/singleDotIntGeneX)+"\t"+geneXDotsVol+"\t"+geneXDotsInt+"\t"+
-                                (geneXDotsIntCor/singleDotIntGeneX)+"\n");
+
+                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt
+                                +"\t"+geneXBgInt+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
                         output_Analyze.flush();
                     }
                 }

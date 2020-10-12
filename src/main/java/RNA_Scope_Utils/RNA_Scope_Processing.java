@@ -19,6 +19,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -418,6 +419,7 @@ public class RNA_Scope_Processing {
             }
         else
             cellsPop.addObjects(nucPop.getObjectsList());
+        //cellsPop.removeObjectsTouchingBorders(imgNuc, true);
         return(cellsPop);
     }
     
