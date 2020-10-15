@@ -8,6 +8,7 @@ package RNA_Scope;
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
 import static RNA_Scope.RNA_Scope.roiBgSize;
@@ -28,11 +29,10 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_backgroundAuto;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
-import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleusLabelledImage;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveCells;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveCellsLabelledImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
 import ij.ImagePlus;
@@ -187,8 +187,13 @@ public class RNA_Scope_Omero implements PlugIn {
                         ImagePlus imgNuc = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
 
 
-                        // find nucleus population
-                        Objects3DPopulation cellsPop = findNucleus(imgNuc);
+                        Objects3DPopulation cellsPop = new Objects3DPopulation();
+                        // if no dilatation find cells with cellOutliner
+                        if (nucDil != 0) {
+                            cellsPop = findNucleus(imgNuc, imgGeneRef);
+                        }
+                        else
+                            cellsPop = findNucleus(imgNuc, null);
 
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
@@ -205,14 +210,14 @@ public class RNA_Scope_Omero implements PlugIn {
                         }
 
                         // Save labelled nucleus
-                        saveNucleusLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
+                        saveCellsLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
 
                         // import  to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Objects.tif", true);
                         new File(outDirResults + rootName + "_Objects.tif").delete();
 
                         // save random color nucleus popualation
-                        saveNucleus(imgNuc, cellsPop, outDirResults, rootName);
+                        saveCells(imgNuc, cellsPop, outDirResults, rootName);
 
                         // import to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Nucleus-ColorObjects.tif", true);

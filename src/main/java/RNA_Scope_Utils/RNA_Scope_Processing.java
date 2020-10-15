@@ -18,6 +18,8 @@ import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.WindowManager;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
@@ -293,12 +295,24 @@ public class RNA_Scope_Processing {
      */
     public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img) {
         //create image objects population
+        Font tagFont = new Font("SansSerif", Font.PLAIN, 30);
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
         imgObj.setCalibration(img.getCalibration());
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             int color = (int)(Math.random() * (255 - 1 + 1) + 1);
             Object3D obj = cellsPop.getObject(i);
-            obj.draw(imgObj, (color));
+            obj.draw(imgObj, color);
+            String name = Integer.toString(i+1);
+            int[] box = obj.getBoundingBox();
+            int z = (int)obj.getCenterZ();
+            int x = box[0] - 2;
+            int y = box[2] - 2;
+            imgObj.getImagePlus().setSlice(z+1);
+            ImageProcessor ip = imgObj.getImagePlus().getProcessor();
+            ip.setFont(tagFont);
+            ip.setColor(color);
+            ip.drawString(name, x, y);
+            imgObj.getImagePlus().updateAndDraw();
         } 
         return(imgObj.getImagePlus());
     } 
@@ -336,15 +350,19 @@ public class RNA_Scope_Processing {
             double cellVol = cellObj.getVolumePixels();
             double cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
             double cellGeneXInt = cellObj.getIntegratedDensity(imhX);
+            
             // due to dilatation
-            int cellMinZ = cellObj.getZmin() < 1 ? 1 : cellObj.getZmin();
-            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
-
+//            int cellMinZ = cellObj.getZmin() < 1 ? 1 : cellObj.getZmin();
+//            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
+            
+            int cellMinZ = cellObj.getZmin() + 1;
+            int cellMaxZ = cellObj.getZmax() + 1;
+            
             // Cell background
             double bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
             double bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
-            //System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
-            //System.out.println("Mean Background  X = " + bgGeneX);
+            System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
+            System.out.println("Mean Background  X = " + bgGeneX);
             
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
@@ -400,8 +418,36 @@ public class RNA_Scope_Processing {
             return(objDil.getObject3DVoxels());
     }
     
+    private static Objects3DPopulation findCell(ImagePlus img, Objects3DPopulation nucPop) {
+        
+        ArrayList<Point3D> nucCenter = new ArrayList<>();
+        GaussianBlur3D.blur(img, 6, 6, 6);
+        // get nucleus center positions 
+        for (int n = 0; n < nucPop.getNbObjects(); n++) {
+            Object3D obj = nucPop.getObject(n);
+            nucCenter.add(obj.getCenterAsPoint());
+        }
+        // and add pointRoi to imgGene
+        PointRoi ptRoi = new PointRoi();
+        for (Point3D pt : nucCenter) {
+            img.setSlice(pt.getRoundZ());
+            ptRoi.addPoint(img, pt.getRoundX(), pt.getRoundY());
+        }
+        img.setRoi(ptRoi);
+        IJ.run(img, "Cell Outliner", "cell_radius=70 tolerance=0.9 kernel_width=5 dark_edge kernel_smoothing=1 polygon_smoothing=1 weighting_gamma=3 iterations=3 dilate=0 all_slices");
+        ImagePlus cellOutline = WindowManager.getImage(img.getTitle() + " Cell Outline");
+        if (cellOutline.isVisible()) {
+            cellOutline.hide();
+            cellOutline.deleteRoi();
+        }
+        cellOutline.setCalibration(img.getCalibration());
+        Objects3DPopulation cellsPop = new Objects3DPopulation(cellOutline);
+        closeImages(cellOutline);
+        return(cellsPop);
+    }
     
-    public static  Objects3DPopulation findNucleus(ImagePlus imgNuc) {
+    
+    public static  Objects3DPopulation findNucleus(ImagePlus imgNuc, ImagePlus imgGene) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
         nucPopOrg = find_nucleus2(imgNuc);
         System.out.println("-- Total nucleus Population :"+nucPopOrg.getNbObjects());
@@ -418,8 +464,7 @@ public class RNA_Scope_Processing {
                 cellsPop.addObject(dilCellObj(imgNuc, obj));
             }
         else
-            cellsPop.addObjects(nucPop.getObjectsList());
-        //cellsPop.removeObjectsTouchingBorders(imgNuc, true);
+            cellsPop = findCell(imgGene, nucPop);
         return(cellsPop);
     }
     
@@ -684,11 +729,11 @@ public class RNA_Scope_Processing {
      * @param outDirResults
      * @param rootName
      */
-    public static void saveNucleus (ImagePlus imgNuc, Objects3DPopulation cellsPop, String outDirResults, String rootName) {
+    public static void saveCells (ImagePlus imgNuc, Objects3DPopulation cellsPop, String outDirResults, String rootName) {
         ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
         IJ.run(imgColorPop, "3-3-2 RGB", "");
         FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
-        ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Nucleus-ColorObjects.tif");
+        ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Cells-ColorObjects.tif");
         closeImages(imgColorPop);
     }
     
@@ -702,7 +747,7 @@ public class RNA_Scope_Processing {
      * @param outDirResults
      * @param rootName
      */
-    public static void saveNucleusLabelledImage (ImagePlus imgNuc, Objects3DPopulation cellsPop, ImagePlus imgGeneRef, ImagePlus imgGeneX,
+    public static void saveCellsLabelledImage (ImagePlus imgNuc, Objects3DPopulation cellsPop, ImagePlus imgGeneRef, ImagePlus imgGeneX,
             String outDirResults, String rootName) {
         // red geneRef , green geneX, blue nucDilpop
         ImageHandler imgCells = ImageHandler.wrap(imgNuc).createSameDimensions();

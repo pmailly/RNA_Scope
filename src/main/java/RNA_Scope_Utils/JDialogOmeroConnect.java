@@ -82,6 +82,10 @@ public class JDialogOmeroConnect extends javax.swing.JDialog {
         jButtonOk = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jTabbedOmero = new javax.swing.JTabbedPane();
+        jPanelLocal = new javax.swing.JPanel();
+        jLabelImagesFolder = new javax.swing.JLabel();
+        jTextFieldImagesFolder = new javax.swing.JTextField();
+        jButtonBrowse = new javax.swing.JButton();
         jPanelOmero = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jTextFieldServerName = new javax.swing.JTextField();
@@ -101,10 +105,6 @@ public class JDialogOmeroConnect extends javax.swing.JDialog {
         jLabel6 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTextAreaImages = new javax.swing.JTextArea();
-        jPanelLocal = new javax.swing.JPanel();
-        jLabelImagesFolder = new javax.swing.JLabel();
-        jTextFieldImagesFolder = new javax.swing.JTextField();
-        jButtonBrowse = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         setTitle("Images selection");
@@ -129,6 +129,44 @@ public class JDialogOmeroConnect extends javax.swing.JDialog {
         });
 
         jTabbedOmero.setForeground(java.awt.Color.lightGray);
+
+        jLabelImagesFolder.setText("Images folder : ");
+
+        jButtonBrowse.setText("Browse");
+        jButtonBrowse.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonBrowseActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanelLocalLayout = new javax.swing.GroupLayout(jPanelLocal);
+        jPanelLocal.setLayout(jPanelLocalLayout);
+        jPanelLocalLayout.setHorizontalGroup(
+            jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanelLocalLayout.createSequentialGroup()
+                .addGap(24, 24, 24)
+                .addComponent(jLabelImagesFolder)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jTextFieldImagesFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 304, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(160, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanelLocalLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButtonBrowse)
+                .addGap(62, 62, 62))
+        );
+        jPanelLocalLayout.setVerticalGroup(
+            jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanelLocalLayout.createSequentialGroup()
+                .addGap(51, 51, 51)
+                .addGroup(jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabelImagesFolder)
+                    .addComponent(jTextFieldImagesFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addComponent(jButtonBrowse)
+                .addContainerGap(334, Short.MAX_VALUE))
+        );
+
+        jTabbedOmero.addTab("Images on local machine", jPanelLocal);
 
         jLabel1.setText("Server name : ");
 
@@ -315,44 +353,6 @@ public class JDialogOmeroConnect extends javax.swing.JDialog {
         );
 
         jTabbedOmero.addTab("Images on Omero server", jPanelOmero);
-
-        jLabelImagesFolder.setText("Images folder : ");
-
-        jButtonBrowse.setText("Browse");
-        jButtonBrowse.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonBrowseActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout jPanelLocalLayout = new javax.swing.GroupLayout(jPanelLocal);
-        jPanelLocal.setLayout(jPanelLocalLayout);
-        jPanelLocalLayout.setHorizontalGroup(
-            jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanelLocalLayout.createSequentialGroup()
-                .addGap(24, 24, 24)
-                .addComponent(jLabelImagesFolder)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextFieldImagesFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 304, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(160, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanelLocalLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButtonBrowse)
-                .addGap(62, 62, 62))
-        );
-        jPanelLocalLayout.setVerticalGroup(
-            jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanelLocalLayout.createSequentialGroup()
-                .addGap(51, 51, 51)
-                .addGroup(jPanelLocalLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabelImagesFolder)
-                    .addComponent(jTextFieldImagesFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addComponent(jButtonBrowse)
-                .addContainerGap(334, Short.MAX_VALUE))
-        );
-
-        jTabbedOmero.addTab("Images on local machine", jPanelLocal);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);

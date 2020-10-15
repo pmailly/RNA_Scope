@@ -3,6 +3,7 @@ package RNA_Scope;
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
@@ -15,6 +16,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.*;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
+import ij.plugin.ImageCalculator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -201,9 +203,18 @@ private String imageExt = "";
                         System.out.println("-- Opening Nucleus channel : "+ ch.get(0));
                         ImagePlus imgNuc = BF.openImagePlus(options)[channelIndex];
                         
-                        // find nucleus population
-                        Objects3DPopulation cellsPop = findNucleus(imgNuc);
+                        // if no dilatation find cells with cellOutliner on gene reference image
+                        // else dilate nucleus
                         
+                        Objects3DPopulation cellsPop = new Objects3DPopulation();
+                        if (nucDil == 0) {
+                            ImageCalculator ic = new ImageCalculator();
+                            ImagePlus imgGenes = ic.run("Add create stack", imgGeneRef, imgGeneX);
+                            cellsPop = findNucleus(imgNuc, imgGenes);
+                            closeImages(imgGenes);
+                        }
+                        else
+                            cellsPop = findNucleus(imgNuc, null);
                         
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
@@ -220,10 +231,10 @@ private String imageExt = "";
 
 
                         // Save labelled nucleus
-                        saveNucleusLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
+                        saveCellsLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
 
                         // save random color nucleus popualation
-                        saveNucleus(imgNuc, cellsPop, outDirResults, rootName);
+                        saveCells(imgNuc, cellsPop, outDirResults, rootName);
 
                         // save dots segmented objects
                         saveDotsImage (imgNuc, cellsPop, geneRefDots, geneXDots, outDirResults, rootName);
