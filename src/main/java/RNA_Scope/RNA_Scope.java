@@ -35,7 +35,7 @@ public class RNA_Scope implements PlugIn {
     public static final double pixDepth = 0.5;
     public static boolean deconv = false;
     public static boolean ghostDots = false;
-    public static Cell nucleus = new Cell(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    public static Cell nucleus = new Cell(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     public static BufferedWriter output_detail_Analyze;
     
 

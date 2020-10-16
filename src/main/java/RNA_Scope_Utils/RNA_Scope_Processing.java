@@ -347,22 +347,20 @@ public class RNA_Scope_Processing {
             // calculate cell parameters
             index++;
             Object3D cellObj = cellsPop.getObject(i);
+            double zCell = cellObj.getCenterZ();
             double cellVol = cellObj.getVolumePixels();
             double cellGeneRefInt = cellObj.getIntegratedDensity(imhRef);
             double cellGeneXInt = cellObj.getIntegratedDensity(imhX);
             
-            // due to dilatation
-//            int cellMinZ = cellObj.getZmin() < 1 ? 1 : cellObj.getZmin();
-//            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
+            int cellMinZ = cellObj.getZmin() == 0 ? 1 : cellObj.getZmin();
+            int cellMaxZ = cellObj.getZmax() > imgGeneRef.getNSlices() ? imgGeneRef.getNSlices() : cellObj.getZmax();
             
-            int cellMinZ = cellObj.getZmin() + 1;
-            int cellMaxZ = cellObj.getZmax() + 1;
             
             // Cell background
             double bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
             double bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
-            System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
-            System.out.println("Mean Background  X = " + bgGeneX);
+            //System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
+            //System.out.println("Mean Background  X = " + bgGeneX);
             
             // ref dots parameters
             for (int n = 0; n < dotsRefPop.getNbObjects(); n++) {
@@ -391,7 +389,7 @@ public class RNA_Scope_Processing {
             int nbGeneRefDotsSegInt = Math.round((float)((geneRefDotsInt - bgGeneRef * geneRefDotsVol) / singleDotIntGeneRef));
             int nbGeneXDotsSegInt = Math.round((float)((geneXDotsInt - bgGeneX * geneXDotsVol) / singleDotIntGeneX));
             
-            Cell cell = new Cell(index, cellVol, cellGeneRefInt, bgGeneRef, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
+            Cell cell = new Cell(index, cellVol, zCell, cellGeneRefInt, bgGeneRef, geneRefDotsVol, geneRefDotsInt, nbGeneRefDotsCellInt, nbGeneRefDotsSegInt, cellGeneXInt,
                     bgGeneX, geneXDotsVol, geneXDotsInt, nbGeneXDotsCellInt, nbGeneXDotsSegInt);
             cells.add(cell);
         }
@@ -715,7 +713,7 @@ public class RNA_Scope_Processing {
         FileWriter  fwAnalyze_detail = new FileWriter(outDirResults + "detailed_results.xls",false);
         output_detail_Analyze = new BufferedWriter(fwAnalyze_detail);
         // write results headers
-        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
+        output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Z center\tCell Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
                 + "Total dots gene ref. (based on cell intensity)\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
                 + "Total dots gene ref (based on dots seg intensity)\tCell Integrated intensity in gene X channel\tMean background intensity in X channel\t"
                 + "Total dots gene X (based on cell intensity)\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)\n");

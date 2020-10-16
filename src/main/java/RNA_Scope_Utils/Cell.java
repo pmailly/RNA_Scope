@@ -15,6 +15,7 @@ public class Cell {
    
     // volume in pixels
     private double cellVol;
+    private double zCell;
     
     // Reference channel
     // cell integrated intensity in gene reference channel
@@ -48,10 +49,11 @@ public class Cell {
     private int nbGeneXDotsSegInt;
    
 	
-	public Cell(int index, double cellVol, double cellGeneRefInt, double cellGeneRefBgInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
+	public Cell(int index, double cellVol, double zCell, double cellGeneRefInt, double cellGeneRefBgInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
                 int nbGeneRefDotsSegInt, double cellGeneXInt, double cellGeneXBgInt, double geneXDotsVol, double geneXDotsInt, int nbGeneXDotsCellInt, int nbGeneXDotsSegInt) {
             this.index = index;
             this.cellVol = cellVol;
+            this.zCell = zCell;
             this.cellGeneRefInt = cellGeneRefInt;
             this.cellGeneRefBgInt = cellGeneRefBgInt;
             this.geneRefDotsVol = geneRefDotsVol;
@@ -72,6 +74,10 @@ public class Cell {
         
         public void setCellVol(double cellVol) {
             this.cellVol = cellVol;
+	}
+        
+        public void setzCell(double zCell) {
+            this.zCell = zCell;
 	}
         
         public void setCellGeneRefInt(double cellGeneRefInt) {
@@ -128,6 +134,10 @@ public class Cell {
         
         public double getCellVol() {
             return cellVol;
+        }
+        
+        public double getzCell() {
+            return zCell;
         }
         
         public double getCellGeneRefInt() {
