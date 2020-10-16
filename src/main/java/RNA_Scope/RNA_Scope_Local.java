@@ -192,8 +192,8 @@ private String imageExt = "";
                         // Estimated background in gene reference and gene X channel
                         
                         else {
-                            roiGeneRef = find_backgroundAuto(imgGeneRef, geneRefDots, roiBgSize);
-                            roiGeneX = find_backgroundAuto(imgGeneX, geneXDots, roiBgSize);
+                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
+                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
                         }
 
                         /*

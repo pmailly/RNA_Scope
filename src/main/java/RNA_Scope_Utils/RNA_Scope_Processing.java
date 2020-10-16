@@ -551,85 +551,36 @@ public class RNA_Scope_Processing {
     }
     
     /**
-     * 
+     * Find min background roi
      * @param imgGene
-     * @param dotsPop
      * @param size
      * @return 
      */
-    private static Roi findBgRoi(ImagePlus imgDotsProj, ImagePlus imgGeneProj, int size, int widthStop, int heightStop) {
-        // Find at least 5 roi without dot in roi
-        // measure mean intensity in gene Z projection image 
+    public static Roi findRoiBbackgroundAuto(ImagePlus imgGeneProj, int size) {
+        // measure min intensity in gene Z projection image 
         // take min intensity of rois found
         Roi roiBg = null;
         ArrayList<Double> intBgFound = new ArrayList();
         ArrayList<Roi> bgRoiFound = new ArrayList();
         int bgCount = 0;
-        for (int x = 0; x < widthStop; x += size) {
-            for (int y = 0; y < heightStop; y += size) {
+        for (int x = 0; x < imgGeneProj.getWidth() - size; x += size) {
+            for (int y = 0; y < imgGeneProj.getHeight() - size; y += size) {
                 Roi roi = new Roi(x, y, size, size);
-                imgDotsProj.setRoi(roi);
-                ImageProcessor ip = imgDotsProj.getProcessor();
-                ImageStatistics statsDots = ip.getStats();
-                // Find roi without dot inside
-                if (statsDots.max == 0) {
-                    imgGeneProj.setRoi(roi);
-                    ImageProcessor ipGene = imgGeneProj.getProcessor();
-                    ImageStatistics statsGene = ipGene.getStats();
-                    intBgFound.add(statsGene.mean);
-                    bgRoiFound.add(roi);
-                    bgCount++;
-                }
-                if (bgCount == 5)
-                    break;
+                imgGeneProj.setRoi(roi);
+                ImageProcessor ip = imgGeneProj.getProcessor();
+                ImageStatistics statsGenes = ip.getStats();
+                intBgFound.add(statsGenes.mean);
+                bgRoiFound.add(roi);
+                bgCount++;
             }
-            if (bgCount == 5)
-                break;
         }
         int minIndex;
-        if (bgCount == 5) {
-            minIndex = intBgFound.indexOf(Collections.min(intBgFound));
-            roiBg = bgRoiFound.get(minIndex);
-            System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
-        }
+        minIndex = intBgFound.indexOf(Collections.min(intBgFound));
+        roiBg = bgRoiFound.get(minIndex);
+        System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
         return(roiBg);
     }
     
-    /*
-    * Auto background intensity
-    * find roi outside dots population
-    */
-    public static Roi find_backgroundAuto(ImagePlus imgGene, Objects3DPopulation dotsPop, int boxSize) {
-        // Draw dots with 255 and do Z projection
-        ImageHandler imgDots = ImageHandler.wrap(imgGene).createSameDimensions();
-        dotsPop.draw(imgDots, 255);
-        ZProjector dotsProj = new ZProjector(imgDots.getImagePlus());
-        dotsProj.setMethod(ZProjector.MAX_METHOD);
-        dotsProj.doProjection();
-        ImagePlus imgDotsProj = dotsProj.getProjection();
-        imgDots.closeImagePlus();
-        // Do Z projection of gene image
-        ZProjector geneProj = new ZProjector(imgGene);
-        geneProj.setMethod(ZProjector.AVG_METHOD);
-        geneProj.doProjection();
-        ImagePlus imgGeneProj = geneProj.getProjection();
-        
-        Roi bgRoi = null;
-        while (bgRoi == null) {
-            int imgWidth = imgDotsProj.getWidth() - boxSize;
-            int imgHeight = imgDotsProj.getHeight() - boxSize;
-            bgRoi = findBgRoi(imgDotsProj, imgGeneProj, boxSize, imgWidth, imgHeight);
-            //resize 20% box 
-            boxSize = boxSize - boxSize*20/100;
-        }
-        if (bgRoi == null) 
-            System.out.println("No roi found for automatic background ");
-        imgDotsProj.hide();
-        closeImages(imgDotsProj);
-        closeImages(imgGeneProj);
-        bgRoi.setName("auto");
-        return(bgRoi);
-    }
     
     /*
     * Get Mean of intensity in stack

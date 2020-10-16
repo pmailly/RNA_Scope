@@ -29,7 +29,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.find_backgroundAuto;
+import static RNA_Scope_Utils.RNA_Scope_Processing.findRoiBbackgroundAuto;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveCells;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveCellsLabelledImage;
@@ -175,8 +175,8 @@ public class RNA_Scope_Omero implements PlugIn {
                         }
                         else {
                             // Estimated background in gene reference and gene X channel
-                            roiGeneRef = find_backgroundAuto(imgGeneRef, geneRefDots, roiBgSize);
-                            roiGeneX = find_backgroundAuto(imgGeneX, geneXDots, roiBgSize);
+                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
+                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
                         }
 
                         /*
