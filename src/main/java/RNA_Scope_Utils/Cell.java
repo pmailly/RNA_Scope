@@ -15,11 +15,13 @@ public class Cell {
    
     // volume in pixels
     private double cellVol;
+    private double zCell;
     
     // Reference channel
     // cell integrated intensity in gene reference channel
     private double cellGeneRefInt;
-   
+    // cell mean background intensity in gene reference channel
+    private double cellGeneRefBgInt;
     // dots volume in pixels
     private double geneRefDotsVol;
     // integrated intensity of total gene reference dots
@@ -30,9 +32,11 @@ public class Cell {
    
     // cell integrated intensity in gene X channel
     private double cellGeneXInt;
-    
+    // cell mean background intensity in gene X channel
+    private double cellGeneXBgInt;
     // dots volume in pixels
     private double geneXDotsVol;
+    
     // integrated intensity of total gene X dots
     private double geneXDotsInt;
     
@@ -45,16 +49,19 @@ public class Cell {
     private int nbGeneXDotsSegInt;
    
 	
-	public Cell(int index, double cellVol, double cellGeneRefInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
-                int nbGeneRefDotsSegInt, double cellGeneXInt, double geneXDotsVol, double geneXDotsInt, int nbGeneXDotsCellInt, int nbGeneXDotsSegInt) {
+	public Cell(int index, double cellVol, double zCell, double cellGeneRefInt, double cellGeneRefBgInt, double geneRefDotsVol, double geneRefDotsInt, int nbGeneRefDotsCellInt, 
+                int nbGeneRefDotsSegInt, double cellGeneXInt, double cellGeneXBgInt, double geneXDotsVol, double geneXDotsInt, int nbGeneXDotsCellInt, int nbGeneXDotsSegInt) {
             this.index = index;
             this.cellVol = cellVol;
+            this.zCell = zCell;
             this.cellGeneRefInt = cellGeneRefInt;
+            this.cellGeneRefBgInt = cellGeneRefBgInt;
             this.geneRefDotsVol = geneRefDotsVol;
             this.geneRefDotsInt = geneRefDotsInt;
             this.nbGeneRefDotsCellInt = nbGeneRefDotsCellInt;
             this.nbGeneRefDotsSegInt = nbGeneRefDotsSegInt;
             this.cellGeneXInt = cellGeneXInt;
+            this.cellGeneXBgInt = cellGeneXBgInt;
             this.geneXDotsVol = geneXDotsVol;
             this.geneXDotsInt = geneXDotsInt;
             this.nbGeneXDotsCellInt = nbGeneXDotsCellInt;
@@ -69,8 +76,16 @@ public class Cell {
             this.cellVol = cellVol;
 	}
         
+        public void setzCell(double zCell) {
+            this.zCell = zCell;
+	}
+        
         public void setCellGeneRefInt(double cellGeneRefInt) {
             this.cellGeneRefInt = cellGeneRefInt;
+	}
+        
+        public void setCellGeneRefBgInt(double cellGeneRefBgInt) {
+            this.cellGeneRefBgInt = cellGeneRefBgInt;
 	}
         
         public void setGeneRefDotsVol(double geneRefDotsVol) {
@@ -91,6 +106,10 @@ public class Cell {
         
         public void setCellGeneXInt(double cellGeneXInt) {
             this.cellGeneXInt = cellGeneXInt;
+	}
+        
+        public void setCellGeneXBgInt(double cellGeneXBgInt) {
+            this.cellGeneXBgInt = cellGeneXBgInt;
 	}
         
         public void setGeneXDotsVol(double geneXDotsVol) {
@@ -117,8 +136,16 @@ public class Cell {
             return cellVol;
         }
         
+        public double getzCell() {
+            return zCell;
+        }
+        
         public double getCellGeneRefInt() {
             return cellGeneRefInt;
+	}
+        
+        public double getCellGeneRefBgInt() {
+            return cellGeneRefBgInt;
 	}
         
         public double getGeneRefDotsVol() {
@@ -139,6 +166,10 @@ public class Cell {
         
         public double getCellGeneXInt() {
             return cellGeneXInt;
+	}
+        
+        public double getCellGeneXBgInt() {
+            return cellGeneXBgInt;
 	}
         
         public double getGeneXDotsVol() {

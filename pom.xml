@@ -118,6 +118,12 @@
                       <version>0.21.5</version>
                       <type>jar</type>
                 </dependency>
+	 <dependency>
+	  <groupId>sc.fiji</groupId>
+	  <artifactId>Calculator_Plus</artifactId>
+	  <version>2.0.2-SNAPSHOT</version>
+	  <type>jar</type>
+	 </dependency>
 	</dependencies>
         <repositories>
             <repository>

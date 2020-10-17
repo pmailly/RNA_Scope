@@ -7,9 +7,11 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.imageExt;
+import static RNA_Scope.RNA_Scope.deconv;
+import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
+import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
@@ -27,11 +29,10 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
-import static RNA_Scope_Utils.RNA_Scope_Processing.find_backgroundAuto;
+import static RNA_Scope_Utils.RNA_Scope_Processing.findRoiBbackgroundAuto;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
-import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.saveNucleusLabelledImage;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveCells;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveCellsLabelledImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
 import ij.ImagePlus;
@@ -82,11 +83,18 @@ public class RNA_Scope_Omero implements PlugIn {
             InitResults(outDirResults);
             
             for (ImageData image : imageData) {
-                if (image.getName().contains(imageExt)) {
+                if (image.getName().endsWith(".nd") || image.getName().endsWith(".ics")) {
+                        if (image.getName().endsWith(".nd")) {
+                            rootName = image.getName().replace(".nd", "");
+                            deconv = false;
+                        }
+                        else {
+                            rootName = image.getName().replace(".ics", "");
+                            deconv = true;
+                        }
                     PixelsData pixels = image.getDefaultPixels();
                     int sizeZ = pixels.getSizeZ();
                     int sizeC = pixels.getSizeC();
-                    String rootName = image.getName().replace(imageExt, "");
                     MetadataFacility mf = gateway.getFacility(MetadataFacility.class);
                     String[] channels = new String[sizeC];
                     for(ChannelData chs : mf.getChannelData(securityContext, image.getId())) {
@@ -112,54 +120,20 @@ public class RNA_Scope_Omero implements PlugIn {
                             }
                         }
                         
-                        // Find roi file for background
-                        if (image.getAnnotations().isEmpty()) {
-                            IJ.showStatus("No roi file found !");
-                            return;
-                        }
-                        Roi roiGeneRef = null, roiGeneX = null;
-                        List<FileAnnotationData> fileAnnotations = getFileAnnotations(image, null);
-                        // If exists roi in image
-                        String roiFile = rootName + ".zip";
-                        RoiManager rm = new RoiManager(false);
-                        for (FileAnnotationData file : fileAnnotations) {
-                            if (file.getFileName().equals(roiFile)) {
-                                roiFile = file.getFilePath();
-                                rm.reset();
-                                rm.runCommand("Open", roiFile);
-                                for (int r = 0; r < rm.getCount(); r++) {
-                                    Roi roi = rm.getRoi(r);
-                                    if (roi.getName().equals("generef"))
-                                        roiGeneRef = roi;
-                                    else
-                                        roiGeneX = roi;
-                                }
-                            }
-                        }
-                        
                         int zStart = removeSlice;
                         int zStop = (sizeZ - 2*removeSlice) <= 0 ? sizeZ : sizeZ - removeSlice;
                         
-                        
-
-                        /*
-                        * Open DAPI channel
-                        */
-                        int channelIndex = ArrayUtils.indexOf(channels, ch.get(0));
-                        System.out.println("-- Opening Nucleus channel : "+ ch.get(0));
-                        ImagePlus imgNuc = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
-
-
-                        // find nucleus population
-                        Objects3DPopulation cellsPop = findNucleus(imgNuc);
-
                         /*
                         * Open Channel 1 (gene reference)
                         */
-                        channelIndex = ArrayUtils.indexOf(channels, ch.get(1));
+                        int channelIndex = ArrayUtils.indexOf(channels, ch.get(1));
                         System.out.println("-- Opening gene reference channel : "+ ch.get(1));
                         ImagePlus imgGeneRef = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
-
+                        
+                        // Find gene reference dots
+                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
+                        System.out.println(geneRefDots.getNbObjects() + " gene dots ref found");
+                        
                         /*
                         * Open Channel 3 (gene X)
                         */
@@ -167,46 +141,83 @@ public class RNA_Scope_Omero implements PlugIn {
                         System.out.println("-- Opening gene X channel : " + ch.get(2));
                         ImagePlus imgGeneX = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
 
-                        // Find gene reference dots
-                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
-
                         // Find gene X dots
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                        System.out.println(geneXDots.getNbObjects() + " gene dots X found");
                         
-                        // Estimated background in gene reference and gene X channel
-                        double bgGeneRef = 0, bgGeneX = 0;
-                        if (autoBackground) {
-                            bgGeneRef = find_backgroundAuto(imgGeneRef, cellsPop);
-                            bgGeneX = find_backgroundAuto(imgGeneX, cellsPop);
+                        // find background
+                        Roi roiGeneRef = null, roiGeneX = null;
+                        if (!autoBackground) {
+                            // Find roi file for background
+                            if (image.getAnnotations().isEmpty()) {
+                                IJ.showStatus("No roi file found !");
+                                return;
+                            }
+                            
+                            List<FileAnnotationData> fileAnnotations = getFileAnnotations(image, null);
+                            // If exists roi in image
+                            String roiFile = rootName + ".zip";
+                            RoiManager rm = new RoiManager(false);
+                            for (FileAnnotationData file : fileAnnotations) {
+                                if (file.getFileName().equals(roiFile)) {
+                                    roiFile = file.getFilePath();
+                                    rm.reset();
+                                    rm.runCommand("Open", roiFile);
+                                    for (int r = 0; r < rm.getCount(); r++) {
+                                        Roi roi = rm.getRoi(r);
+                                        if (roi.getName().equals("generef"))
+                                            roiGeneRef = roi;
+                                        else
+                                            roiGeneX = roi;
+                                    }
+                                }
+                            }
                         }
                         else {
-                            bgGeneRef = find_background(imgGeneRef, roiGeneRef);
-                            bgGeneX = find_background(imgGeneX, roiGeneX);
+                            // Estimated background in gene reference and gene X channel
+                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
+                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
                         }
-                        
+
+                        /*
+                        * Open DAPI channel
+                        */
+                        channelIndex = ArrayUtils.indexOf(channels, ch.get(0));
+                        System.out.println("-- Opening Nucleus channel : "+ ch.get(0));
+                        ImagePlus imgNuc = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
+
+
+                        Objects3DPopulation cellsPop = new Objects3DPopulation();
+                        // if no dilatation find cells with cellOutliner
+                        if (nucDil != 0) {
+                            cellsPop = findNucleus(imgNuc, imgGeneRef);
+                        }
+                        else
+                            cellsPop = findNucleus(imgNuc, null);
+
                         // Find cells parameters in geneRef and geneX images
-                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, bgGeneRef, bgGeneX);
+                        ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
 
 
-                       // write results for each cell population
+                        // write results for each cell population
                         for (int n = 0; n < listCells.size(); n++) {
-                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getCellGeneRefInt()
-                                    +"\t"+bgGeneRef+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
-                                    +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+bgGeneX+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
+                            output_detail_Analyze.write(rootName+"\t"+listCells.get(n).getIndex()+"\t"+listCells.get(n).getCellVol()+"\t"+listCells.get(n).getzCell()+"\t"+listCells.get(n).getCellGeneRefInt()
+                                    +"\t"+listCells.get(n).getCellGeneRefBgInt()+"\t"+listCells.get(n).getnbGeneRefDotsCellInt()+"\t"+listCells.get(n).getGeneRefDotsVol()+"\t"+listCells.get(n).getGeneRefDotsInt()
+                                    +"\t"+listCells.get(n).getnbGeneRefDotsSegInt()+"\t"+listCells.get(n).getCellGeneXInt()+"\t"+listCells.get(n).getCellGeneXBgInt()+"\t"+listCells.get(n).getnbGeneXDotsCellInt()
                                     +"\t"+listCells.get(n).getGeneXDotsVol()+"\t"+listCells.get(n).getGeneXDotsInt()+"\t"+listCells.get(n).getnbGeneXDotsSegInt()+"\n");
                             output_detail_Analyze.flush();                       
 
                         }
 
                         // Save labelled nucleus
-                        saveNucleusLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
+                        saveCellsLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
 
                         // import  to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Objects.tif", true);
                         new File(outDirResults + rootName + "_Objects.tif").delete();
 
                         // save random color nucleus popualation
-                        saveNucleus(imgNuc, cellsPop, outDirResults, rootName);
+                        saveCells(imgNuc, cellsPop, outDirResults, rootName);
 
                         // import to Omero server
                         OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Nucleus-ColorObjects.tif", true);

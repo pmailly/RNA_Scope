@@ -20,7 +20,6 @@ import java.awt.Frame;
 public class RNA_Scope implements PlugIn {
 
     public final boolean canceled = false;
-    public static final String imageExt = ".nd";
     public static  String outDirResults = "";
     public static String rootName = "";
     public static Calibration cal = new Calibration();
@@ -31,9 +30,12 @@ public class RNA_Scope implements PlugIn {
     public static double singleDotIntGeneRef = 0;
     public static double singleDotIntGeneX = 0;
     public static boolean autoBackground = false;
+    public static int roiBgSize = 100;
     private static final double pixWidth = 0.103;
-    private static final double pixDepth = 0.5;
-    public static Cell nucleus = new Cell(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    public static final double pixDepth = 0.5;
+    public static boolean deconv = false;
+    public static boolean ghostDots = false;
+    public static Cell nucleus = new Cell(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     public static BufferedWriter output_detail_Analyze;
     
 
@@ -61,6 +63,7 @@ public class RNA_Scope implements PlugIn {
         if (localImages) {
             new RNA_Scope_Local().run("");
         }
+        
         /*
         Images on OMERO server
         */
