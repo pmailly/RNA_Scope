@@ -152,9 +152,7 @@ private String imageExt = "";
                         System.out.println("-- Opening gene reference channel : "+ ch.get(1));
                         ImagePlus imgGeneRef = BF.openImagePlus(options)[channelIndex];
                         
-                        // Find gene reference dots
-                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
-                        System.out.println("Finding gene "+geneRefDots.getNbObjects()+" reference dots");
+                        
                         
                         /*
                         * Open Channel 3 (gene X)
@@ -163,9 +161,7 @@ private String imageExt = "";
                         System.out.println("-- Opening gene X channel : " + ch.get(2));
                         ImagePlus imgGeneX = BF.openImagePlus(options)[channelIndex];
                         
-                        //Find gene X dots
-                        Objects3DPopulation geneXDots = findGenePop(imgGeneX);
-                        System.out.println("Finding gene "+geneXDots.getNbObjects()+" X dots");
+                        
                         
                         Roi roiGeneRef = null, roiGeneX = null;
                         
@@ -195,6 +191,14 @@ private String imageExt = "";
                             roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
                             roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
                         }
+                        
+                        // Find gene reference dots
+                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
+                        System.out.println("Finding gene "+geneRefDots.getNbObjects()+" reference dots");
+                        
+                        //Find gene X dots
+                        Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                        System.out.println("Finding gene "+geneXDots.getNbObjects()+" X dots");
 
                         /*
                         * Open DAPI channel

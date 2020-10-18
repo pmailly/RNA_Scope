@@ -33,7 +33,8 @@ public class RoiBg {
             return roi;
         }
         
-        public double getbgInt() {
+        public double getBgInt() {
             return bgInt;
         }
+
 }

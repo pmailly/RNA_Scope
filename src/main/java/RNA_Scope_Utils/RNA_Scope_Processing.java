@@ -2,6 +2,7 @@ package RNA_Scope_Utils;
 
 
 import static RNA_Scope.RNA_Scope.autoBackground;
+import static RNA_Scope.RNA_Scope.bgIndex;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
@@ -106,6 +107,7 @@ public class RNA_Scope_Processing {
         gd.addMessage("Auto background", Font.getFont("Monospace"), Color.blue);
         gd.addCheckbox("Auto background ", autoBackground);
         gd.addNumericField("Size of background box size : ", roiBgSize, 0);
+        gd.addNumericField("Index of background intensity : ", bgIndex, 0);
         gd.addCheckbox("Remove ghost dots ", ghostDots);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
@@ -124,6 +126,7 @@ public class RNA_Scope_Processing {
         singleDotIntGeneX = gd.getNextNumber();
         autoBackground = gd.getNextBoolean();
         roiBgSize = (int)gd.getNextNumber();
+        bgIndex = (int)gd.getNextNumber();
         ghostDots = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
@@ -557,26 +560,28 @@ public class RNA_Scope_Processing {
      * @param size
      * @return 
      */
-    public static Roi findRoiBbackgroundAuto(ImagePlus imgGeneProj, int size) {
+    public static Roi findRoiBbackgroundAuto(ImagePlus img, int size) {
         // measure min intensity in gene Z projection image 
-        // take roi at median of 5 first min intensity of rois found
+        // take roi at bgIndex min intensity of rois found
         
-        ArrayList<RoiBg> intBgFound = new ArrayList();
-        int bgCount = 0;
-        for (int x = 0; x < imgGeneProj.getWidth() - size; x += size) {
-            for (int y = 0; y < imgGeneProj.getHeight() - size; y += size) {
+        ArrayList<RoiBg> intBgFound = new ArrayList<RoiBg>();
+        ZProjector proj = new ZProjector(img);
+        proj.setMethod(ZProjector.MIN_METHOD);
+        proj.doProjection();
+        ImagePlus imgProj = proj.getProjection();
+        for (int x = 0; x < imgProj.getWidth() - size; x += size) {
+            for (int y = 0; y < imgProj.getHeight() - size; y += size) {
                 Roi roi = new Roi(x, y, size, size);
-                imgGeneProj.setRoi(roi);
-                ImageProcessor ip = imgGeneProj.getProcessor();
+                imgProj.setRoi(roi);
+                ImageProcessor ip = imgProj.getProcessor();
                 ImageStatistics statsGenes = ip.getStats();
                 intBgFound.add(new RoiBg(roi, statsGenes.mean));
-                bgCount++;
             }
         }
-        int minIndex = 5;
-        intBgFound.sort(Comparator.comparing(RoiBg::getbgInt).reversed());
-        Roi roiBg = intBgFound.get(minIndex).getRoi();
-        System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
+        closeImages(imgProj);
+        intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
+        Roi roiBg = intBgFound.get(bgIndex).getRoi();
+        System.out.println("Auto background found = "+intBgFound.get(bgIndex).getBgInt());
         return(roiBg);
     }
     
