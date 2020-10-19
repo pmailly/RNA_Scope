@@ -2,6 +2,7 @@ package RNA_Scope_Utils;
 
 
 import static RNA_Scope.RNA_Scope.autoBackground;
+import static RNA_Scope.RNA_Scope.bgIndex;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
@@ -41,6 +42,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -105,6 +107,7 @@ public class RNA_Scope_Processing {
         gd.addMessage("Auto background", Font.getFont("Monospace"), Color.blue);
         gd.addCheckbox("Auto background ", autoBackground);
         gd.addNumericField("Size of background box size : ", roiBgSize, 0);
+        gd.addNumericField("Index of background intensity : ", bgIndex, 0);
         gd.addCheckbox("Remove ghost dots ", ghostDots);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
@@ -123,6 +126,7 @@ public class RNA_Scope_Processing {
         singleDotIntGeneX = gd.getNextNumber();
         autoBackground = gd.getNextBoolean();
         roiBgSize = (int)gd.getNextNumber();
+        bgIndex = (int)gd.getNextNumber();
         ghostDots = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
@@ -305,8 +309,8 @@ public class RNA_Scope_Processing {
             String name = Integer.toString(i+1);
             int[] box = obj.getBoundingBox();
             int z = (int)obj.getCenterZ();
-            int x = box[0] - 2;
-            int y = box[2] - 2;
+            int x = box[0] - 1;
+            int y = box[2] - 1;
             imgObj.getImagePlus().setSlice(z+1);
             ImageProcessor ip = imgObj.getImagePlus().getProcessor();
             ip.setFont(tagFont);
@@ -552,32 +556,32 @@ public class RNA_Scope_Processing {
     
     /**
      * Find min background roi
-     * @param imgGene
+     * @param imgGeneProj
      * @param size
      * @return 
      */
-    public static Roi findRoiBbackgroundAuto(ImagePlus imgGeneProj, int size) {
+    public static Roi findRoiBbackgroundAuto(ImagePlus img, int size) {
         // measure min intensity in gene Z projection image 
-        // take min intensity of rois found
-        Roi roiBg = null;
-        ArrayList<Double> intBgFound = new ArrayList();
-        ArrayList<Roi> bgRoiFound = new ArrayList();
-        int bgCount = 0;
-        for (int x = 0; x < imgGeneProj.getWidth() - size; x += size) {
-            for (int y = 0; y < imgGeneProj.getHeight() - size; y += size) {
+        // take roi at bgIndex min intensity of rois found
+        
+        ArrayList<RoiBg> intBgFound = new ArrayList<RoiBg>();
+        ZProjector proj = new ZProjector(img);
+        proj.setMethod(ZProjector.MIN_METHOD);
+        proj.doProjection();
+        ImagePlus imgProj = proj.getProjection();
+        for (int x = 0; x < imgProj.getWidth() - size; x += size) {
+            for (int y = 0; y < imgProj.getHeight() - size; y += size) {
                 Roi roi = new Roi(x, y, size, size);
-                imgGeneProj.setRoi(roi);
-                ImageProcessor ip = imgGeneProj.getProcessor();
+                imgProj.setRoi(roi);
+                ImageProcessor ip = imgProj.getProcessor();
                 ImageStatistics statsGenes = ip.getStats();
-                intBgFound.add(statsGenes.mean);
-                bgRoiFound.add(roi);
-                bgCount++;
+                intBgFound.add(new RoiBg(roi, statsGenes.mean));
             }
         }
-        int minIndex;
-        minIndex = intBgFound.indexOf(Collections.min(intBgFound));
-        roiBg = bgRoiFound.get(minIndex);
-        System.out.println(bgCount+" bg box found size = " + size+ " bg min = "+ intBgFound.get(minIndex));
+        closeImages(imgProj);
+        intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
+        Roi roiBg = intBgFound.get(bgIndex).getRoi();
+        System.out.println("Auto background found = "+intBgFound.get(bgIndex).getBgInt());
         return(roiBg);
     }
     
@@ -616,8 +620,8 @@ public class RNA_Scope_Processing {
             name = Integer.toString(n+1);
             int[] box = obj.getBoundingBox();
             int z = (int)obj.getCenterZ();
-            int x = box[0] - 2;
-            int y = box[2] - 2;
+            int x = box[0] - 1;
+            int y = box[2] - 1;
             img.setSlice(z+1);
             ImageProcessor ip = img.getProcessor();
             ip.setFont(tagFont);
