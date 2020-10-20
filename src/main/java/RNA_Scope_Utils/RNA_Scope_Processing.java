@@ -2,7 +2,6 @@ package RNA_Scope_Utils;
 
 
 import static RNA_Scope.RNA_Scope.autoBackground;
-import static RNA_Scope.RNA_Scope.bgIndex;
 import static RNA_Scope.RNA_Scope.cal;
 import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
@@ -42,18 +41,14 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Object3D;
 import mcib3d.geom.Object3DVoxels;
-import mcib3d.geom.Object3D_IJUtils;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.geom.Point3D;
-import mcib3d.geom.Voxel3D;
 import mcib3d.image3d.ImageFloat;
 import mcib3d.image3d.ImageHandler;
 import mcib3d.image3d.ImageInt;
@@ -61,7 +56,6 @@ import mcib3d.image3d.ImageLabeller;
 import mcib3d.image3d.distanceMap3d.EDT;
 import mcib3d.image3d.processing.FastFilters3D;
 import mcib3d.image3d.regionGrowing.Watershed3D;
-import mpicbg.ij.integral.RemoveOutliers;
 import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.haesleinhuepf.clij2.CLIJ2;
 import org.w3c.dom.Document;
@@ -81,6 +75,10 @@ public class RNA_Scope_Processing {
     
     public static CLIJ2 clij2 = CLIJ2.getInstance();
     private static String threshold = AutoThresholder.Method.Otsu.toString();
+    public static double calibBgGeneRef = 100;
+    public static double calibBgGeneX = 100;
+    
+    
     
     /**
      * Dialog ask for channels order
@@ -106,11 +104,12 @@ public class RNA_Scope_Processing {
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
-        gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
-        gd.addMessage("Auto background", Font.getFont("Monospace"), Color.blue);
+        gd.addNumericField("Gene X single dot mean intensity         : ", singleDotIntGeneX, 0);
+        gd.addMessage("Background detection", Font.getFont("Monospace"), Color.blue);
         gd.addCheckbox("Auto background ", autoBackground);
         gd.addNumericField("Size of background box size : ", roiBgSize, 0);
-        gd.addNumericField("Index of background intensity : ", bgIndex, 0);
+        gd.addNumericField("Gene reference background intensity from calibration : ", calibBgGeneRef, 0);
+        gd.addNumericField("Gene X background intensity from calibration : ", calibBgGeneX, 0);
         gd.addCheckbox("Remove ghost dots ", ghostDots);
         if (showCal) {
             gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
@@ -130,7 +129,8 @@ public class RNA_Scope_Processing {
         singleDotIntGeneX = gd.getNextNumber();
         autoBackground = gd.getNextBoolean();
         roiBgSize = (int)gd.getNextNumber();
-        bgIndex = (int)gd.getNextNumber();
+        calibBgGeneRef = (int)gd.getNextNumber();
+        calibBgGeneX = (int)gd.getNextNumber();
         ghostDots = gd.getNextBoolean();
         if (showCal) {
             cal.pixelWidth = gd.getNextNumber();
@@ -539,34 +539,99 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
+//    /**
+//     * Find min background roi
+//     * @param img
+//     * @param size
+//     * @return 
+//     */
+//    public static Roi findRoiBbackgroundAuto(ImagePlus img, double bgGene) {
+//        // measure min intensity in gene Z projection image 
+//        // take roi at bgIndex min intensity of rois found
+//        
+//        ArrayList<RoiBg> intBgFound = new ArrayList<RoiBg>();
+//        ZProjector proj = new ZProjector(img);
+//        proj.setMethod(ZProjector.SUM_METHOD);
+//        proj.doProjection();
+//        ImagePlus imgProj = proj.getProjection();
+//        for (int x = 0; x < imgProj.getWidth() - roiBgSize; x += roiBgSize) {
+//            for (int y = 0; y < imgProj.getHeight() - roiBgSize; y += roiBgSize) {
+//                Roi roi = new Roi(x, y, roiBgSize, roiBgSize);
+//                imgProj.setRoi(roi);
+//                ImageProcessor ip = imgProj.getProcessor();
+//                ImageStatistics statsGenes = ip.getStats();
+//                intBgFound.add(new RoiBg(roi, statsGenes.mean));
+//            }
+//        }
+//        
+//        // sort RoiBg on bg value
+//        intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
+//        
+//        // Find nearest value from bgGene
+//        double min = Double.MAX_VALUE;
+//        double closest = bgGene;
+//        Roi roiBg = null;
+//        for (RoiBg v : intBgFound) {
+//            final double diff = Math.abs(v.getBgInt() - bgGene);
+//            if (diff < min) {
+//                min = diff;
+//                closest = v.getBgInt();
+//                roiBg = v.getRoi();
+//            }
+//        }
+//        
+//        System.out.println("Auto background found = "+closest);
+////        imgProj.setRoi(roiBg);
+////        imgProj.show();
+////        new WaitForUserDialog("test").show();
+//        closeImages(imgProj);
+//        return(roiBg);
+//    }
+    
     /**
      * Find min background roi
      * @param img
      * @param size
      * @return 
      */
-    public static Roi findRoiBbackgroundAuto(ImagePlus img, int size) {
-        // measure min intensity in gene Z projection image 
-        // take roi at bgIndex min intensity of rois found
+    public static Roi findRoiBbackgroundAuto(ImagePlus img, double bgGene) {
+        // scroll gene image and measure bg intensity in roi 
+        // take roi at intensity nearest from bgGene
         
         ArrayList<RoiBg> intBgFound = new ArrayList<RoiBg>();
-        ZProjector proj = new ZProjector(img);
-        proj.setMethod(ZProjector.MIN_METHOD);
-        proj.doProjection();
-        ImagePlus imgProj = proj.getProjection();
-        for (int x = 0; x < imgProj.getWidth() - size; x += size) {
-            for (int y = 0; y < imgProj.getHeight() - size; y += size) {
-                Roi roi = new Roi(x, y, size, size);
-                imgProj.setRoi(roi);
-                ImageProcessor ip = imgProj.getProcessor();
-                ImageStatistics statsGenes = ip.getStats();
-                intBgFound.add(new RoiBg(roi, statsGenes.mean));
+        
+        for (int x = 0; x < img.getWidth() - roiBgSize; x += roiBgSize) {
+            for (int y = 0; y < img.getHeight() - roiBgSize; y += roiBgSize) {
+                Roi roi = new Roi(x, y, roiBgSize, roiBgSize);
+                img.setRoi(roi);
+                ImagePlus imgCrop = img.crop("stack");
+                double bg = find_background(imgCrop, 1, img.getNSlices());
+                intBgFound.add(new RoiBg(roi, bg));
+                closeImages(imgCrop);
             }
         }
-        closeImages(imgProj);
+        img.deleteRoi();
+        // sort RoiBg on bg value
         intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
-        Roi roiBg = intBgFound.get(bgIndex).getRoi();
-        System.out.println("Auto background found at index "+bgIndex+" = "+intBgFound.get(bgIndex).getBgInt());
+        
+        // Find nearest value from bgGene
+        double min = Double.MAX_VALUE;
+        double closest = bgGene;
+        Roi roiBg = null;
+        for (RoiBg v : intBgFound) {
+            final double diff = Math.abs(v.getBgInt() - bgGene);
+            if (diff < min) {
+                min = diff;
+                closest = v.getBgInt();
+                roiBg = v.getRoi();
+            }
+        }
+        int roiCenterX = roiBg.getBounds().x+(roiBgSize/2);
+        int roiCenterY = roiBg.getBounds().y+(roiBgSize/2);
+        System.out.println("Roi auto background found = "+closest+" center x = "+roiCenterX+", y = "+roiCenterY);
+//        img.setRoi(roiBg);
+//        img.show();
+//        new WaitForUserDialog("test").show();
         return(roiBg);
     }
     

@@ -11,7 +11,6 @@ import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
@@ -26,6 +25,7 @@ import static RNA_Scope_Utils.OmeroConnect.getResolutionImage;
 import static RNA_Scope_Utils.OmeroConnect.securityContext;
 import static RNA_Scope_Utils.RNA_Scope_Processing.dialog;
 import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
+import static RNA_Scope_Utils.RNA_Scope_Processing.calibBgGeneRef;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
@@ -175,8 +175,8 @@ public class RNA_Scope_Omero implements PlugIn {
                         }
                         else {
                             // Estimated background in gene reference and gene X channel
-                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
-                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
+                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
+                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneRef);
                         }
 
                         /*

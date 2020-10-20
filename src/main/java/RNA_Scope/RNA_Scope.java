@@ -30,8 +30,7 @@ public class RNA_Scope implements PlugIn {
     public static double singleDotIntGeneRef = 0;
     public static double singleDotIntGeneX = 0;
     public static boolean autoBackground = false;
-    public static int roiBgSize = 150;
-    public static int bgIndex = 5;
+    public static int roiBgSize = 100;
     private static final double pixWidth = 0.103;
     public static final double pixDepth = 0.5;
     public static boolean deconv = false;

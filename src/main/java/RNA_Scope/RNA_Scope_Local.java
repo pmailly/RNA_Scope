@@ -7,7 +7,6 @@ import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imagesFolder;
@@ -188,8 +187,8 @@ private String imageExt = "";
                         // Estimated background in gene reference and gene X channel
                         
                         else {
-                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
-                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
+                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
+                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneX);
                         }
                         
                         // Find gene reference dots
