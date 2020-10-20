@@ -32,6 +32,7 @@ import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
 import ij.plugin.filter.Analyzer;
+import ij.process.AutoThresholder;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import java.awt.Color;
@@ -79,7 +80,7 @@ import org.xml.sax.SAXException;
 public class RNA_Scope_Processing {
     
     public static CLIJ2 clij2 = CLIJ2.getInstance();
-
+    private static String threshold = AutoThresholder.Method.Otsu.toString();
     
     /**
      * Dialog ask for channels order
@@ -91,14 +92,16 @@ public class RNA_Scope_Processing {
      */
     public static ArrayList dialog(String[] channels, boolean showCal, Calibration cal) {
         ArrayList ch = new ArrayList();
+        String[] thresholdMethod = AutoThresholder.getMethods();
         GenericDialogPlus gd = new GenericDialogPlus("Parameters");
         gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
         gd.addChoice("DAPI           : ", channels, channels[0]);
         gd.addChoice("Gene Reference : ", channels, channels[1]);
         gd.addChoice("Gene X         : ", channels, channels[2]);
-        gd.addMessage("nucleus volume filter parameters", Font.getFont("Monospace"), Color.blue);
-        gd.addNumericField("Min Volume size : ", minNucVol, 2);
-        gd.addNumericField("Max Volume size : ", maxNucVol, 2);
+        gd.addMessage("nucleus parameters", Font.getFont("Monospace"), Color.blue);
+        gd.addChoice("Threshold method         : ", thresholdMethod, thresholdMethod[11]);
+        gd.addNumericField("Min Volume size    : ", minNucVol, 2);
+        gd.addNumericField("Max Volume size    : ", maxNucVol, 2);
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
@@ -118,6 +121,7 @@ public class RNA_Scope_Processing {
         ch.add(0, gd.getNextChoice());
         ch.add(1, gd.getNextChoice());
         ch.add(2, gd.getNextChoice());
+        threshold = gd.getNextChoice();
         minNucVol = gd.getNextNumber();
         maxNucVol = gd.getNextNumber();
         nucDil = (float)gd.getNextNumber();
@@ -470,25 +474,6 @@ public class RNA_Scope_Processing {
         return(cellsPop);
     }
     
-    /**
-     * Remove Outliers
-     * 
-     * @param img
-     * @param radX
-     * @param radY
-     * @param factor
-     * @return img
-     */
-    public static ImagePlus removeOutliers(ImagePlus img, int radX, int radY, float factor) {
-        
-        for (int i = 0; i < img.getNSlices(); i++) {
-            img.setSlice(i);
-            ImageProcessor ip = img.getProcessor();
-            RemoveOutliers removeOut = new RemoveOutliers(ip.convertToFloatProcessor());
-            removeOut.removeOutliers(radX, radY, factor);
-        }
-        return(img);
-    } 
     
     
     /**
@@ -498,14 +483,13 @@ public class RNA_Scope_Processing {
      */
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
         ImagePlus img = new Duplicator().run(imgNuc);
-        removeOutliers(img, 50, 50, 1);
         ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
         for (int i = 1; i <= img.getStackSize(); i++) {
             IJ.showStatus("Finding nucleus section "+i+" / "+img.getStackSize());
             img.setZ(i);
             img.updateAndDraw();
-            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Otsu outlier_radius=0 outlier_threshold=1 max_nucleus_size=600 "
-                    + "min_nucleus_size=300 erosion=5 expansion_inner=5 expansion=5 results_overlay");
+            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method="+threshold+" outlier_radius=50 outlier_threshold=1 max_nucleus_size=100 "
+                    + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
             img.setZ(1);
             img.updateAndDraw();
             ImagePlus mask = new ImagePlus("mask", img.createRoiMask().getBufferedImage());
@@ -515,7 +499,7 @@ public class RNA_Scope_Processing {
                 ip.erode();
             stack.addSlice(ip);
         }
-        ImagePlus imgStack = new ImagePlus("Nucleus", stack);
+        ImagePlus imgStack = new ImagePlus("Nucleus", stack);        
         IJ.showStatus("Starting watershed...");
         ImagePlus imgWater = WatershedSplit(imgStack, 8);
         closeImages(imgStack);
@@ -582,7 +566,7 @@ public class RNA_Scope_Processing {
         closeImages(imgProj);
         intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
         Roi roiBg = intBgFound.get(bgIndex).getRoi();
-        System.out.println("Auto background found = "+intBgFound.get(bgIndex).getBgInt());
+        System.out.println("Auto background found at index "+bgIndex+" = "+intBgFound.get(bgIndex).getBgInt());
         return(roiBg);
     }
     
