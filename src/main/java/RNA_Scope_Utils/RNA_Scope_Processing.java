@@ -413,7 +413,7 @@ public class RNA_Scope_Processing {
      * @return 
      */
     private static Object3DVoxels dilCellObj(ImagePlus img, Object3D obj) {
-        Object3D objDil = obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil));
+        Object3D objDil = obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil/cal.pixelDepth));
         // check if object go outside image
         if (objDil.getXmin() < 0 || objDil.getXmax() > img.getWidth() || objDil.getYmin() < 0 || objDil.getYmax() > img.getHeight()
                 || objDil.getZmin() < 0 || objDil.getZmax() > img.getNSlices()) {
@@ -539,54 +539,7 @@ public class RNA_Scope_Processing {
         return(water.getWatershedImage3D().getImagePlus());
     }
     
-//    /**
-//     * Find min background roi
-//     * @param img
-//     * @param size
-//     * @return 
-//     */
-//    public static Roi findRoiBbackgroundAuto(ImagePlus img, double bgGene) {
-//        // measure min intensity in gene Z projection image 
-//        // take roi at bgIndex min intensity of rois found
-//        
-//        ArrayList<RoiBg> intBgFound = new ArrayList<RoiBg>();
-//        ZProjector proj = new ZProjector(img);
-//        proj.setMethod(ZProjector.SUM_METHOD);
-//        proj.doProjection();
-//        ImagePlus imgProj = proj.getProjection();
-//        for (int x = 0; x < imgProj.getWidth() - roiBgSize; x += roiBgSize) {
-//            for (int y = 0; y < imgProj.getHeight() - roiBgSize; y += roiBgSize) {
-//                Roi roi = new Roi(x, y, roiBgSize, roiBgSize);
-//                imgProj.setRoi(roi);
-//                ImageProcessor ip = imgProj.getProcessor();
-//                ImageStatistics statsGenes = ip.getStats();
-//                intBgFound.add(new RoiBg(roi, statsGenes.mean));
-//            }
-//        }
-//        
-//        // sort RoiBg on bg value
-//        intBgFound.sort(Comparator.comparing(RoiBg::getBgInt));
-//        
-//        // Find nearest value from bgGene
-//        double min = Double.MAX_VALUE;
-//        double closest = bgGene;
-//        Roi roiBg = null;
-//        for (RoiBg v : intBgFound) {
-//            final double diff = Math.abs(v.getBgInt() - bgGene);
-//            if (diff < min) {
-//                min = diff;
-//                closest = v.getBgInt();
-//                roiBg = v.getRoi();
-//            }
-//        }
-//        
-//        System.out.println("Auto background found = "+closest);
-////        imgProj.setRoi(roiBg);
-////        imgProj.show();
-////        new WaitForUserDialog("test").show();
-//        closeImages(imgProj);
-//        return(roiBg);
-//    }
+
     
     /**
      * Find min background roi
