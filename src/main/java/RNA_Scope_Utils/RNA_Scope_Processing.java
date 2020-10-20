@@ -498,13 +498,14 @@ public class RNA_Scope_Processing {
      */
     public static Objects3DPopulation find_nucleus2(ImagePlus imgNuc) {
         ImagePlus img = new Duplicator().run(imgNuc);
+        removeOutliers(img, 50, 50, 1);
         ImageStack stack = new ImageStack(img.getWidth(), imgNuc.getHeight());
         for (int i = 1; i <= img.getStackSize(); i++) {
             IJ.showStatus("Finding nucleus section "+i+" / "+img.getStackSize());
             img.setZ(i);
             img.updateAndDraw();
-            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Triangle outlier_radius=15 outlier_threshold=1 max_nucleus_size=500 "
-                    + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
+            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method=Otsu outlier_radius=0 outlier_threshold=1 max_nucleus_size=600 "
+                    + "min_nucleus_size=300 erosion=5 expansion_inner=5 expansion=5 results_overlay");
             img.setZ(1);
             img.updateAndDraw();
             ImagePlus mask = new ImagePlus("mask", img.createRoiMask().getBufferedImage());
@@ -556,7 +557,7 @@ public class RNA_Scope_Processing {
     
     /**
      * Find min background roi
-     * @param imgGeneProj
+     * @param img
      * @param size
      * @return 
      */
