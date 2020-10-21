@@ -21,7 +21,6 @@ import ij.ImageStack;
 import ij.WindowManager;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -29,11 +28,9 @@ import ij.measure.ResultsTable;
 import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
-import ij.plugin.ZProjector;
 import ij.plugin.filter.Analyzer;
 import ij.process.AutoThresholder;
 import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
 import java.awt.Color;
 import java.awt.Font;
 import java.io.BufferedWriter;
@@ -47,6 +44,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Object3D;
 import mcib3d.geom.Object3DVoxels;
+import mcib3d.geom.Object3D_IJUtils;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.geom.Point3D;
 import mcib3d.image3d.ImageFloat;
@@ -77,6 +75,7 @@ public class RNA_Scope_Processing {
     private static String threshold = AutoThresholder.Method.Otsu.toString();
     public static double calibBgGeneRef = 100;
     public static double calibBgGeneX = 100;
+    public static boolean nucDilMet = true;
     
     
     
@@ -100,6 +99,7 @@ public class RNA_Scope_Processing {
         gd.addChoice("Threshold method         : ", thresholdMethod, thresholdMethod[11]);
         gd.addNumericField("Min Volume size    : ", minNucVol, 2);
         gd.addNumericField("Max Volume size    : ", maxNucVol, 2);
+        gd.addCheckbox("Find cells on nucleus dilatation ", nucDilMet);
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
@@ -123,6 +123,7 @@ public class RNA_Scope_Processing {
         threshold = gd.getNextChoice();
         minNucVol = gd.getNextNumber();
         maxNucVol = gd.getNextNumber();
+        nucDilMet = gd.getNextBoolean();
         nucDil = (float)gd.getNextNumber();
         removeSlice = (int)gd.getNextNumber();
         singleDotIntGeneRef = gd.getNextNumber();
@@ -136,7 +137,7 @@ public class RNA_Scope_Processing {
             cal.pixelWidth = gd.getNextNumber();
             cal.pixelDepth = gd.getNextNumber();
         }
-        
+        gd.dispose();
         if(gd.wasCanceled())
             ch = null;
         return(ch);
@@ -425,33 +426,74 @@ public class RNA_Scope_Processing {
     }
     
     private static Objects3DPopulation findCell(ImagePlus img, Objects3DPopulation nucPop) {
-        
-        ArrayList<Point3D> nucCenter = new ArrayList<>();
+        Objects3DPopulation cellsPop = new Objects3DPopulation();
         GaussianBlur3D.blur(img, 6, 6, 6);
         // get nucleus center positions 
-        for (int n = 0; n < nucPop.getNbObjects(); n++) {
+        int nucNb = nucPop.getNbObjects();
+        for (int n = 0; n < nucNb; n++) {
             Object3D obj = nucPop.getObject(n);
-            nucCenter.add(obj.getCenterAsPoint());
-        }
-        // and add pointRoi to imgGene
-        PointRoi ptRoi = new PointRoi();
-        for (Point3D pt : nucCenter) {
-            img.setSlice(pt.getRoundZ());
-            ptRoi.addPoint(img, pt.getRoundX(), pt.getRoundY());
-        }
-        img.setRoi(ptRoi);
-        IJ.run(img, "Cell Outliner", "cell_radius=70 tolerance=0.9 kernel_width=5 dark_edge kernel_smoothing=1 polygon_smoothing=1 weighting_gamma=3 iterations=3 dilate=0 all_slices");
-        ImagePlus cellOutline = WindowManager.getImage(img.getTitle() + " Cell Outline");
-        if (cellOutline.isVisible()) {
-            cellOutline.hide();
+            Point3D ptCenter = obj.getCenterAsPoint();
+            int zMin = (int)(obj.getZmin() - nucDil) < 1 ? 1 : (int)(obj.getZmin() - nucDil);
+            int zMax = (int)(obj.getZmax() + nucDil) > img.getNSlices() ? img.getNSlices() : (int)(obj.getZmax() + nucDil);
+            ImagePlus imgCell = new Duplicator().run(img, zMin, zMax);
+            imgCell.setTitle("Cell");
+            imgCell.setSlice(zMin - zMax);
+            imgCell.setRoi(new PointRoi(ptCenter.getRoundX(), ptCenter.getRoundY()));
+            IJ.run(imgCell, "Cell Outliner", "cell_radius=70 tolerance=0.5 kernel_width=2 dark_edge kernel_smoothing=1 polygon_smoothing=0 weighting_gamma=3 iterations=3 dilate=0 all_slices");
+            ImagePlus cellOutline = WindowManager.getImage("Cell Cell Outline");
+            if (cellOutline.isVisible())
+                cellOutline.hide();
+            cellOutline.setCalibration(img.getCalibration());
             cellOutline.deleteRoi();
+            Object3DVoxels cellObj = Object3D_IJUtils.createObject3DVoxels(cellOutline, 1);
+            cellObj.setNewCenter(cellObj.getCenterX(), cellObj.getCenterY(), ptCenter.getRoundZ());
+            System.out.println("Finding cell "+ (n+1) + " of " +nucNb);
+            closeImages(cellOutline);
+            cellsPop.addObject(cellObj);
         }
-        cellOutline.setCalibration(img.getCalibration());
-        Objects3DPopulation cellsPop = new Objects3DPopulation(cellOutline);
-        closeImages(cellOutline);
         return(cellsPop);
     }
     
+    
+    
+    private static Objects3DPopulation findCellOutliner(ImagePlus img, Objects3DPopulation nucPop) {
+        Objects3DPopulation cellsPop = new Objects3DPopulation();
+        GaussianBlur3D.blur(img, 6, 6, 6);
+        // cellOutliner parameters
+        RNA_Scope_Utils.CellOutliner cell = new CellOutliner();
+        cell.cellRadius = 70;
+        cell.darkEdge = true;
+        cell.dilate = 0;
+        cell.iterations = 3;
+        cell.kernelSmoothing = 1;
+        cell.kernelWidth = 2;
+        cell.polygonSmoothing = 0;
+        cell.tolerance = 0.5;
+        cell.weightingGamma = 3;
+        cell.processAllSlices = true;
+       
+        // get nucleus center positions 
+        int nucNb = nucPop.getNbObjects();
+        for (int n = 0; n < 10; n++) {
+            Object3D obj = nucPop.getObject(n);
+            Point3D ptCenter = obj.getCenterAsPoint();
+            int zMin = (int)(obj.getZmin() - nucDil) < 1 ? 1 : (int)(obj.getZmin() - nucDil);
+            int zMax = (int)(obj.getZmax() + nucDil) > img.getNSlices() ? img.getNSlices() : (int)(obj.getZmax() + nucDil);
+            ImagePlus imgCell = new Duplicator().run(img, zMin, zMax);
+            imgCell.setSlice(zMax - zMin);
+            imgCell.setRoi(new PointRoi(ptCenter.getRoundX(), ptCenter.getRoundY()));
+            cell.setup("", imgCell);
+            ImagePlus imgCellMask = cell.run(imgCell.getProcessor());
+            imgCellMask.setCalibration(img.getCalibration());
+            imgCellMask.deleteRoi();
+            Object3DVoxels cellObj = Object3D_IJUtils.createObject3DVoxels(imgCellMask, 1);
+            cellObj.setNewCenter(cellObj.getCenterX(), cellObj.getCenterY(), ptCenter.getRoundZ());
+            System.out.println("Finding cell "+ (n+1) + " of " +nucNb);
+            closeImages(imgCellMask);
+            cellsPop.addObject(cellObj);
+        }
+        return(cellsPop);
+    }
     
     public static  Objects3DPopulation findNucleus(ImagePlus imgNuc, ImagePlus imgGene) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
@@ -463,14 +505,13 @@ public class RNA_Scope_Processing {
         System.out.println("-- Total nucleus Population after size filter: "+ nbNucPop);
         // create dilated nucleus population
         Objects3DPopulation cellsPop = new Objects3DPopulation();
-        if (nucDil != 0)
+        if (nucDilMet)
             for (int o = 0; o < nucPop.getNbObjects(); o++) {
                 Object3D obj = nucPop.getObject(o);
-                //cellsPop.addObject(obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil)));
                 cellsPop.addObject(dilCellObj(imgNuc, obj));
             }
         else
-            cellsPop = findCell(imgGene, nucPop);
+            cellsPop = findCellOutliner(imgGene, nucPop);
         return(cellsPop);
     }
     

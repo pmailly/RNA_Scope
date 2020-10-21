@@ -15,6 +15,7 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.*;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.plugin.ImageCalculator;
 import java.io.File;
 import java.io.IOException;
@@ -210,9 +211,9 @@ private String imageExt = "";
                         // else dilate nucleus
                         
                         Objects3DPopulation cellsPop = new Objects3DPopulation();
-                        if (nucDil == 0) {
+                        if (!nucDilMet) {
                             ImageCalculator ic = new ImageCalculator();
-                            ImagePlus imgGenes = ic.run("Add create stack", imgGeneRef, imgGeneX);
+                            ImagePlus imgGenes = ic.run("Add create 32-bit stack", imgGeneRef, imgGeneX);
                             cellsPop = findNucleus(imgNuc, imgGenes);
                             closeImages(imgGenes);
                         }
