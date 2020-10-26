@@ -198,7 +198,7 @@ private final Calibration cal = new Calibration();
                         }
                         
                         // write headers
-                        output_Analyze.write("Image Name\tCells Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
+                        output_Analyze.write("Image Name\tGene Vol\tCells Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
                             + "Total dots gene ref. (based on cells intensity)\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
                             + "Total dots gene ref (based on dots seg intensity)\tCells Integrated intensity in gene X channel\tMean background intensity in X channel\t"
                             + "Total dots gene X (based on cells intensity)\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)\n");
@@ -214,7 +214,7 @@ private final Calibration cal = new Calibration();
                     else {
                         double geneRefInt = 0, geneRefDotsInt = 0, geneRefBgInt = 0, geneRefIntCor = 0, geneRefDotsIntCor = 0,
                                 geneXInt = 0, geneXDotsInt = 0, geneXBgInt = 0, geneXIntCor = 0, geneXDotsIntCor = 0;
-                        double geneRefVol = 0, geneXVol = 0, geneRefDotsVol = 0, geneXDotsVol = 0;
+                        double geneVol = 0, geneRefDotsVol = 0, geneXDotsVol = 0;
                         reader.setSeries(0);
                         ImporterOptions options = new ImporterOptions();
                         options.setColorMode(ImporterOptions.COLOR_MODE_GRAYSCALE);
@@ -261,17 +261,16 @@ private final Calibration cal = new Calibration();
                                 // find intensity for gene ref
                                 imgGeneRef = BF.openImagePlus(options)[0];
                                 geneRefInt = find_Integrated(imgGeneRef);
-                                geneRefVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
+                                geneVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
                                 geneRefPop = findGenePop(imgGeneRef);
                                 // for gene X
                                 imgGeneX = BF.openImagePlus(options)[1];
                                 geneXInt = find_Integrated(imgGeneX);
-                                geneXVol = imgGeneX.getNSlices()*imgGeneX.getWidth()*imgGeneX.getHeight();
                                 geneXPop = findGenePop(imgGeneX);
                             }
                             // corrected value    
-                            geneRefIntCor = geneRefInt - geneRefBgInt*geneRefVol;
-                            geneXIntCor = geneXInt - geneXBgInt*geneXVol;
+                            geneRefIntCor = geneRefInt - geneRefBgInt*geneVol;
+                            geneXIntCor = geneXInt - geneXBgInt*geneVol;
                         }
                         // save dots image
                         saveDotsImage(imgGeneX, geneRefPop, geneXPop, outDirResults, rootName);
@@ -294,7 +293,7 @@ private final Calibration cal = new Calibration();
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
 
-                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
+                        output_Analyze.write(rootName+"\t"+geneVol+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
                                 geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
                         output_Analyze.flush();
                     }
