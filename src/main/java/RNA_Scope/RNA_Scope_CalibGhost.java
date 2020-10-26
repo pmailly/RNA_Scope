@@ -6,7 +6,6 @@
 package RNA_Scope;
 
 
-import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
 import RNA_Scope_Utils.Dot;
 import RNA_Scope_Utils.RNA_Scope_Processing;
@@ -37,6 +36,7 @@ import mcib3d.geom.Object3D;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.geom.Point3D;
 import mcib3d.image3d.ImageHandler;
+import org.apache.commons.io.FilenameUtils;
 import org.xml.sax.SAXException;
 
 
@@ -144,18 +144,12 @@ private static BufferedWriter output_dotCalib;
             String rootName = "";
             ArrayList<String> ch = new ArrayList<>();
             ghostDots = true;
-            for (int i = 0; i < imageFile.length; i++) {
+            for (String f : imageFile) {
                 // Find tif files no dconv TIF deconv
-                if (imageFile[i].endsWith(".TIF") || imageFile[i].endsWith(".tif")) {
-                    if (imageFile[i].endsWith(".tif")) {
-                        rootName = imageFile[i].replace(".tif", "");
-                        deconv = false;
-                    }
-                    else {
-                        rootName = imageFile[i].replace(".TIF", "");
-                        deconv = true;
-                    }
-                    String imageName = inDir+ File.separator+imageFile[i];
+                String fileExt = FilenameUtils.getExtension(f);
+                 if (fileExt.equals("tif")) {
+                    rootName = FilenameUtils.getBaseName(f);
+                    String imageName = inDir+ File.separator+f;
                     imageNum++;
                     
                     // Check calibration

@@ -5,7 +5,6 @@
 package RNA_Scope;
 
 
-import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
 import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
@@ -49,6 +48,7 @@ import loci.plugins.util.ImageProcessorReader;
 import mcib3d.geom.Object3D;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.image3d.ImageHandler;
+import org.apache.commons.io.FilenameUtils;
 
 
 /**
@@ -169,28 +169,18 @@ private final Calibration cal = new Calibration();
             int imageNum = 0; 
             String rootName = "";
             ArrayList<String> ch = new ArrayList();
-            for (int i = 0; i < imageFile.length; i++) {
+            for (String f : imageFile) {
                 // Find images files
-                if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
-                    if (imageFile[i].endsWith(".nd")) {
-                        rootName = imageFile[i].replace(".nd", "");
-                        deconv = false;
-                    }
-                    else {
-                        rootName = imageFile[i].replace(".ics", "");
-                        deconv = true;
-                    }
-                    String imageName = inDir+ File.separator+imageFile[i];
+                String fileExt = FilenameUtils.getExtension(f);
+                if (fileExt.equals("nd")) {
+                    rootName = FilenameUtils.getBaseName(f);
+                    String imageName = inDir+ File.separator+f;
                     reader.setId(imageName);
                     int sizeZ = reader.getSizeZ();
                     int sizeC = reader.getSizeC();
                     String[] channels = new String[sizeC];
                     String channelsID = meta.getImageName(0);
-                    if (!deconv)
-                        channels = channelsID.replace("_", "-").split("/");
-                    else 
-                        for (int c = 0; c < sizeC; c++) 
-                            channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
+                    channels = channelsID.replace("_", "-").split("/");
                     imageNum++;
                     // Check calibration
                     if (imageNum == 1) {
@@ -251,38 +241,37 @@ private final Calibration cal = new Calibration();
                             options.setCropRegion(0, reg);
                             
                             
-                            // gene reference
-                            if (roiName.contains("ref")) {
-                                // Open Gene reference channel
-                                System.out.println("Opening reference gene channel ...");
-                                imgGeneRef = BF.openImagePlus(options)[0];
-                                if (roiName.contains("bg")) 
-                                    geneRefBgInt = find_background(imgGeneRef, 1, imgGeneRef.getNSlices());
-                                else {
-                                    geneRefInt = find_Integrated(imgGeneRef);
-                                    geneRefVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
-                                    geneRefPop = findGenePop(imgGeneRef);
-                                }
-                                
-                                geneRefIntCor = geneRefInt - geneRefBgInt*geneRefVol;
-                                
-                            }
                             
-                            // gene X
-                            if (roiName.contains("x")) {
-                                // Open Gene reference channel
-                                System.out.println("Opening X gene channel ...");
-                                imgGeneX = BF.openImagePlus(options)[1];
-                                if (roiName.contains("bg")) 
-                                    geneXBgInt = find_background(imgGeneX, 1, imgGeneX.getNSlices());
-                                else {
-                                    geneXInt = find_Integrated(imgGeneX);
-                                    geneXVol = imgGeneX.getNSlices()*imgGeneX.getWidth()*imgGeneX.getHeight();
-                                    geneXPop = findGenePop(imgGeneX);
+                            if (roiName.contains("bg")) {
+                                // background
+                                if (roiName.contains("ref"))  {
+                                    // Open Gene reference channel
+                                    System.out.println("Opening reference gene channel ...");
+                                    imgGeneRef = BF.openImagePlus(options)[0];
+                                    geneRefBgInt = find_background(imgGeneRef, 1, imgGeneRef.getNSlices());
                                 }
-                                
-                                geneXIntCor = geneXInt - geneXBgInt*geneXVol;
+                                else {
+                                    // Open Gene X channel
+                                    System.out.println("Opening X gene channel ...");
+                                    imgGeneX = BF.openImagePlus(options)[1];
+                                    geneXBgInt = find_background(imgGeneX, 1, imgGeneX.getNSlices());
+                                }
                             }
+                            else {
+                                // find intensity for gene ref
+                                imgGeneRef = BF.openImagePlus(options)[0];
+                                geneRefInt = find_Integrated(imgGeneRef);
+                                geneRefVol = imgGeneRef.getNSlices()*imgGeneRef.getWidth()*imgGeneRef.getHeight();
+                                geneRefPop = findGenePop(imgGeneRef);
+                                // for gene X
+                                imgGeneX = BF.openImagePlus(options)[1];
+                                geneXInt = find_Integrated(imgGeneX);
+                                geneXVol = imgGeneX.getNSlices()*imgGeneX.getWidth()*imgGeneX.getHeight();
+                                geneXPop = findGenePop(imgGeneX);
+                            }
+                            // corrected value    
+                            geneRefIntCor = geneRefInt - geneRefBgInt*geneRefVol;
+                            geneXIntCor = geneXInt - geneXBgInt*geneXVol;
                         }
                         // save dots image
                         saveDotsImage(imgGeneX, geneRefPop, geneXPop, outDirResults, rootName);
@@ -305,8 +294,8 @@ private final Calibration cal = new Calibration();
                         closeImages(imgGeneRef);
                         closeImages(imgGeneX);
 
-                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt
-                                +"\t"+geneXBgInt+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
+                        output_Analyze.write(rootName+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
+                                geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
                         output_Analyze.flush();
                     }
                 }

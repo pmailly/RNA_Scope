@@ -1,9 +1,9 @@
 package RNA_Scope_Utils;
 
 
+import static RNA_Scope.RNA_Scope.autoBackgroundMethods;
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.deconv;
 import static RNA_Scope.RNA_Scope.ghostDots;
 import static RNA_Scope.RNA_Scope.pixDepth;
 import static RNA_Scope.RNA_Scope.maxNucVol;
@@ -18,8 +18,7 @@ import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.WindowManager;
-import ij.gui.PointRoi;
+import ij.gui.DialogListener;
 import ij.gui.Roi;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
@@ -44,7 +43,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Object3D;
 import mcib3d.geom.Object3DVoxels;
-import mcib3d.geom.Object3D_IJUtils;
 import mcib3d.geom.Objects3DPopulation;
 import mcib3d.geom.Point3D;
 import mcib3d.image3d.ImageFloat;
@@ -69,13 +67,12 @@ import org.xml.sax.SAXException;
  * @author phm
  */
 
-public class RNA_Scope_Processing {
+public abstract class RNA_Scope_Processing implements DialogListener{
     
     public static CLIJ2 clij2 = CLIJ2.getInstance();
     private static String threshold = AutoThresholder.Method.Otsu.toString();
     public static double calibBgGeneRef = 100;
     public static double calibBgGeneX = 100;
-    public static boolean nucDilMet = true;
     
     
     
@@ -99,14 +96,13 @@ public class RNA_Scope_Processing {
         gd.addChoice("Threshold method         : ", thresholdMethod, thresholdMethod[11]);
         gd.addNumericField("Min Volume size    : ", minNucVol, 2);
         gd.addNumericField("Max Volume size    : ", maxNucVol, 2);
-        gd.addCheckbox("Find cells on nucleus dilatation ", nucDilMet);
         gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
         gd.addNumericField("Section to remove  : ",removeSlice, 0);
         gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
         gd.addNumericField("Gene X single dot mean intensity         : ", singleDotIntGeneX, 0);
         gd.addMessage("Background detection", Font.getFont("Monospace"), Color.blue);
-        gd.addCheckbox("Auto background ", autoBackground);
+        gd.addChoice("Auto background ", autoBackgroundMethods, autoBackgroundMethods[0]);
         gd.addNumericField("Size of background box size : ", roiBgSize, 0);
         gd.addNumericField("Gene reference background intensity from calibration : ", calibBgGeneRef, 0);
         gd.addNumericField("Gene X background intensity from calibration : ", calibBgGeneX, 0);
@@ -123,12 +119,11 @@ public class RNA_Scope_Processing {
         threshold = gd.getNextChoice();
         minNucVol = gd.getNextNumber();
         maxNucVol = gd.getNextNumber();
-        nucDilMet = gd.getNextBoolean();
         nucDil = (float)gd.getNextNumber();
         removeSlice = (int)gd.getNextNumber();
         singleDotIntGeneRef = gd.getNextNumber();
         singleDotIntGeneX = gd.getNextNumber();
-        autoBackground = gd.getNextBoolean();
+        autoBackground = gd.getNextChoice().toString();
         roiBgSize = (int)gd.getNextNumber();
         calibBgGeneRef = (int)gd.getNextNumber();
         calibBgGeneX = (int)gd.getNextNumber();
@@ -280,15 +275,10 @@ public class RNA_Scope_Processing {
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
         ClearCLBuffer imgCLBin;
-        if (!deconv) {
-            ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
-            clij2.release(imgCLMed);
-            imgCLBin = threshold(imgCLDOG, "IsoData", false); 
-            clij2.release(imgCLDOG);
-        }
-        else {
-            imgCLBin = threshold(imgCLMed, "IsoData", false); 
-        }
+        ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
+        clij2.release(imgCLMed);
+        imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+        clij2.release(imgCLDOG);
         Objects3DPopulation genePop = new Objects3DPopulation();
         if (ghostDots)
             genePop = getPopFromClearBuffer(open(imgCLBin)); 
@@ -343,11 +333,18 @@ public class RNA_Scope_Processing {
         ImageHandler imhX = ImageHandler.wrap(imgGeneX);
         int index = 0;
         
+        ImagePlus imgGeneRefCrop = new ImagePlus();
+        ImagePlus imgGeneXCrop = new ImagePlus();
+        double bgGeneRef = 0, bgGeneX = 0;
+        
         // crop image for background
-        imgGeneRef.setRoi(roiBgGeneRef);
-        ImagePlus imgGeneRefCrop = imgGeneRef.crop("stack");
-        imgGeneX.setRoi(roiBgGeneX);
-        ImagePlus imgGeneXCrop = imgGeneX.crop("stack");
+        if (roiBgGeneRef != null) {
+            imgGeneRef.setRoi(roiBgGeneRef);
+            imgGeneRefCrop = imgGeneRef.crop("stack");
+            imgGeneX.setRoi(roiBgGeneX);
+            imgGeneXCrop = imgGeneX.crop("stack");
+        }
+       
         
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
             double geneRefDotsVol = 0, geneXDotsVol = 0;
@@ -366,8 +363,14 @@ public class RNA_Scope_Processing {
             
             
             // Cell background
-            double bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
-            double bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
+            if (roiBgGeneRef != null) {
+                bgGeneRef = find_background(imgGeneRefCrop, cellMinZ, cellMaxZ);
+                bgGeneX = find_background(imgGeneXCrop, cellMinZ, cellMaxZ);
+            }
+            else {
+                bgGeneRef = calibBgGeneRef;
+                bgGeneX = calibBgGeneX;
+            } 
             //System.out.println("Mean Background  ref = " + bgGeneRef + " zmin "+cellMinZ+" zmax "+cellMaxZ);
             //System.out.println("Mean Background  X = " + bgGeneX);
             
@@ -425,77 +428,8 @@ public class RNA_Scope_Processing {
             return(objDil.getObject3DVoxels());
     }
     
-    private static Objects3DPopulation findCell(ImagePlus img, Objects3DPopulation nucPop) {
-        Objects3DPopulation cellsPop = new Objects3DPopulation();
-        GaussianBlur3D.blur(img, 6, 6, 6);
-        // get nucleus center positions 
-        int nucNb = nucPop.getNbObjects();
-        for (int n = 0; n < nucNb; n++) {
-            Object3D obj = nucPop.getObject(n);
-            Point3D ptCenter = obj.getCenterAsPoint();
-            int zMin = (int)(obj.getZmin() - nucDil) < 1 ? 1 : (int)(obj.getZmin() - nucDil);
-            int zMax = (int)(obj.getZmax() + nucDil) > img.getNSlices() ? img.getNSlices() : (int)(obj.getZmax() + nucDil);
-            ImagePlus imgCell = new Duplicator().run(img, zMin, zMax);
-            imgCell.setTitle("Cell");
-            imgCell.setSlice(zMin - zMax);
-            imgCell.setRoi(new PointRoi(ptCenter.getRoundX(), ptCenter.getRoundY()));
-            IJ.run(imgCell, "Cell Outliner", "cell_radius=70 tolerance=0.5 kernel_width=2 dark_edge kernel_smoothing=1 polygon_smoothing=0 weighting_gamma=3 iterations=3 dilate=0 all_slices");
-            ImagePlus cellOutline = WindowManager.getImage("Cell Cell Outline");
-            if (cellOutline.isVisible())
-                cellOutline.hide();
-            cellOutline.setCalibration(img.getCalibration());
-            cellOutline.deleteRoi();
-            Object3DVoxels cellObj = Object3D_IJUtils.createObject3DVoxels(cellOutline, 1);
-            cellObj.setNewCenter(cellObj.getCenterX(), cellObj.getCenterY(), ptCenter.getRoundZ());
-            System.out.println("Finding cell "+ (n+1) + " of " +nucNb);
-            closeImages(cellOutline);
-            cellsPop.addObject(cellObj);
-        }
-        return(cellsPop);
-    }
     
-    
-    
-    private static Objects3DPopulation findCellOutliner(ImagePlus img, Objects3DPopulation nucPop) {
-        Objects3DPopulation cellsPop = new Objects3DPopulation();
-        GaussianBlur3D.blur(img, 6, 6, 6);
-        // cellOutliner parameters
-        RNA_Scope_Utils.CellOutliner cell = new CellOutliner();
-        cell.cellRadius = 70;
-        cell.darkEdge = true;
-        cell.dilate = 0;
-        cell.iterations = 3;
-        cell.kernelSmoothing = 1;
-        cell.kernelWidth = 2;
-        cell.polygonSmoothing = 0;
-        cell.tolerance = 0.5;
-        cell.weightingGamma = 3;
-        cell.processAllSlices = true;
-       
-        // get nucleus center positions 
-        int nucNb = nucPop.getNbObjects();
-        for (int n = 0; n < 10; n++) {
-            Object3D obj = nucPop.getObject(n);
-            Point3D ptCenter = obj.getCenterAsPoint();
-            int zMin = (int)(obj.getZmin() - nucDil) < 1 ? 1 : (int)(obj.getZmin() - nucDil);
-            int zMax = (int)(obj.getZmax() + nucDil) > img.getNSlices() ? img.getNSlices() : (int)(obj.getZmax() + nucDil);
-            ImagePlus imgCell = new Duplicator().run(img, zMin, zMax);
-            imgCell.setSlice(zMax - zMin);
-            imgCell.setRoi(new PointRoi(ptCenter.getRoundX(), ptCenter.getRoundY()));
-            cell.setup("", imgCell);
-            ImagePlus imgCellMask = cell.run(imgCell.getProcessor());
-            imgCellMask.setCalibration(img.getCalibration());
-            imgCellMask.deleteRoi();
-            Object3DVoxels cellObj = Object3D_IJUtils.createObject3DVoxels(imgCellMask, 1);
-            cellObj.setNewCenter(cellObj.getCenterX(), cellObj.getCenterY(), ptCenter.getRoundZ());
-            System.out.println("Finding cell "+ (n+1) + " of " +nucNb);
-            closeImages(imgCellMask);
-            cellsPop.addObject(cellObj);
-        }
-        return(cellsPop);
-    }
-    
-    public static  Objects3DPopulation findNucleus(ImagePlus imgNuc, ImagePlus imgGene) {
+    public static  Objects3DPopulation findNucleus(ImagePlus imgNuc) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
         nucPopOrg = find_nucleus2(imgNuc);
         System.out.println("-- Total nucleus Population :"+nucPopOrg.getNbObjects());
@@ -505,13 +439,10 @@ public class RNA_Scope_Processing {
         System.out.println("-- Total nucleus Population after size filter: "+ nbNucPop);
         // create dilated nucleus population
         Objects3DPopulation cellsPop = new Objects3DPopulation();
-        if (nucDilMet)
-            for (int o = 0; o < nucPop.getNbObjects(); o++) {
-                Object3D obj = nucPop.getObject(o);
-                cellsPop.addObject(dilCellObj(imgNuc, obj));
-            }
-        else
-            cellsPop = findCellOutliner(imgGene, nucPop);
+        for (int o = 0; o < nucPop.getNbObjects(); o++) {
+            Object3D obj = nucPop.getObject(o);
+            cellsPop.addObject(dilCellObj(imgNuc, obj));
+        }
         return(cellsPop);
     }
     
@@ -623,9 +554,6 @@ public class RNA_Scope_Processing {
         int roiCenterX = roiBg.getBounds().x+(roiBgSize/2);
         int roiCenterY = roiBg.getBounds().y+(roiBgSize/2);
         System.out.println("Roi auto background found = "+closest+" center x = "+roiCenterX+", y = "+roiCenterY);
-//        img.setRoi(roiBg);
-//        img.show();
-//        new WaitForUserDialog("test").show();
         return(roiBg);
     }
     

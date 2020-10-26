@@ -2,8 +2,6 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.deconv;
-import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.outDirResults;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
@@ -15,8 +13,6 @@ import static RNA_Scope_Utils.RNA_Scope_Processing.*;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
-import ij.plugin.ImageCalculator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,6 +33,7 @@ import ij.plugin.frame.RoiManager;
 import java.util.ArrayList;
 import loci.plugins.in.ImporterOptions;
 import mcib3d.geom.Objects3DPopulation;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.ArrayUtils;
 
 
@@ -57,7 +54,6 @@ private String imageExt = "";
            
     @Override
     public void run(String arg) {
-        if (localImages) {
             try {
                 if (imagesFolder == null) {
                     return;
@@ -69,7 +65,7 @@ private String imageExt = "";
                     return;
                 }
                 // create output folder
-                outDirResults = inDir + File.separator+ "Out"+ File.separator;
+                outDirResults = inDir + File.separator+ "Results"+ File.separator;
                 File outDir = new File(outDirResults);
                 if (!Files.exists(Paths.get(outDirResults))) {
                     outDir.mkdir();
@@ -87,18 +83,12 @@ private String imageExt = "";
                 Arrays.sort(imageFile);
                 int imageNum = 0;
                 ArrayList<String> ch = new ArrayList();
-                for (int i = 0; i < imageFile.length; i++) {
+                for (String f : imageFile) {
                     // Find nd or ics files
-                    if (imageFile[i].endsWith(".nd") || imageFile[i].endsWith(".ics")) {
-                        if (imageFile[i].endsWith(".nd")) {
-                            rootName = imageFile[i].replace(".nd", "");
-                            deconv = false;
-                        }
-                        else {
-                            rootName = imageFile[i].replace(".ics", "");
-                            deconv = true;
-                        }
-                        String imageName = inDir+ File.separator+imageFile[i];
+                    String fileExt = FilenameUtils.getExtension(f);
+                    if (fileExt.equals("nd")) {
+                        rootName = FilenameUtils.getBaseName(f);
+                        String imageName = inDir+ File.separator+f;
                         reader.setId(imageName);
                         int sizeZ = reader.getSizeZ();
                         int sizeC = reader.getSizeC();
@@ -106,11 +96,7 @@ private String imageExt = "";
                         imageNum++;
                         boolean showCal = false;
                         String channelsID = meta.getImageName(0);
-                        if (!deconv)
-                            channels = channelsID.replace("_", "-").split("/");
-                        else 
-                            for (int c = 0; c < sizeC; c++) 
-                                channels[c] = meta.getChannelExcitationWavelength(0, c).value().toString();
+                        channels = channelsID.replace("_", "-").split("/");
                         // Check calibration
                         if (imageNum == 1) {
                             cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();
@@ -152,8 +138,6 @@ private String imageExt = "";
                         System.out.println("-- Opening gene reference channel : "+ ch.get(1));
                         ImagePlus imgGeneRef = BF.openImagePlus(options)[channelIndex];
                         
-                        
-                        
                         /*
                         * Open Channel 3 (gene X)
                         */
@@ -165,31 +149,37 @@ private String imageExt = "";
                         
                         Roi roiGeneRef = null, roiGeneX = null;
                         
-                        // find roi file for background detection if no automatic detection
-                        if (!autoBackground) {
-                            String roiFile = inDir+ File.separator + rootName + ".zip";
-                            if (!new File(roiFile).exists()) {
-                                IJ.showStatus("No roi file found !");
-                                return;
-                            }
-                            // Find roi for gene ref and gene X
-                            RoiManager rm = new RoiManager(false);
-                            rm.runCommand("Open", roiFile);
+                        // Background detection methods
                         
-                            for (int r = 0; r < rm.getCount(); r++) {
-                                Roi roi = rm.getRoi(r);
-                                if (roi.getName().equals("generef"))
-                                    roiGeneRef = roi;
-                                else
-                                    roiGeneX = roi;
-                            }
-                        }
-                        
-                        // Estimated background in gene reference and gene X channel
-                        
-                        else {
-                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
-                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneX);
+                        switch (autoBackground) {
+                            // from rois
+                            case "From roi" :
+                                String roiFile = inDir+ File.separator + rootName + ".zip";
+                                if (!new File(roiFile).exists()) {
+                                    IJ.showStatus("No roi file found !");
+                                    return;
+                                }
+                                // Find roi for gene ref and gene X
+                                RoiManager rm = new RoiManager(false);
+                                rm.runCommand("Open", roiFile);
+
+                                for (int r = 0; r < rm.getCount(); r++) {
+                                    Roi roi = rm.getRoi(r);
+                                    if (roi.getName().equals("generef"))
+                                        roiGeneRef = roi;
+                                    else
+                                        roiGeneX = roi;
+                                }
+                                break;
+                            // automatic search roi from calibration values     
+                            case "Auto" :
+                                roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
+                                roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneX);
+                                break;
+                            case "From calibration" :
+                                roiGeneRef = null;
+                                roiGeneX = null;
+                                break;
                         }
                         
                         // Find gene reference dots
@@ -211,14 +201,7 @@ private String imageExt = "";
                         // else dilate nucleus
                         
                         Objects3DPopulation cellsPop = new Objects3DPopulation();
-                        if (!nucDilMet) {
-                            ImageCalculator ic = new ImageCalculator();
-                            ImagePlus imgGenes = ic.run("Add create 32-bit stack", imgGeneRef, imgGeneX);
-                            cellsPop = findNucleus(imgNuc, imgGenes);
-                            closeImages(imgGenes);
-                        }
-                        else
-                            cellsPop = findNucleus(imgNuc, null);
+                        cellsPop = findNucleus(imgNuc);
                         
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
@@ -253,9 +236,6 @@ private String imageExt = "";
                 } catch (IOException | DependencyException | ServiceException | FormatException ex) {
                     Logger.getLogger(RNA_Scope_Local.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }
-            else
-                new RNA_Scope_Omero().run("");
 
             IJ.showStatus("Process done ...");
         }
