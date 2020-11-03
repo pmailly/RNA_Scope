@@ -7,11 +7,8 @@ package RNA_Scope;
 
 import static RNA_Scope.RNA_Scope.autoBackground;
 import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.deconv;
-import static RNA_Scope.RNA_Scope.nucDil;
 import static RNA_Scope.RNA_Scope.output_detail_Analyze;
 import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.roiBgSize;
 import static RNA_Scope.RNA_Scope.rootName;
 import RNA_Scope_Utils.Cell;
 import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
@@ -26,6 +23,8 @@ import static RNA_Scope_Utils.OmeroConnect.getResolutionImage;
 import static RNA_Scope_Utils.OmeroConnect.securityContext;
 import static RNA_Scope_Utils.RNA_Scope_Processing.dialog;
 import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
+import static RNA_Scope_Utils.RNA_Scope_Processing.calibBgGeneRef;
+import static RNA_Scope_Utils.RNA_Scope_Processing.calibBgGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
@@ -83,15 +82,8 @@ public class RNA_Scope_Omero implements PlugIn {
             InitResults(outDirResults);
             
             for (ImageData image : imageData) {
-                if (image.getName().endsWith(".nd") || image.getName().endsWith(".ics")) {
-                        if (image.getName().endsWith(".nd")) {
-                            rootName = image.getName().replace(".nd", "");
-                            deconv = false;
-                        }
-                        else {
-                            rootName = image.getName().replace(".ics", "");
-                            deconv = true;
-                        }
+                if (image.getName().endsWith(".nd")) {
+                    rootName = image.getName().replace(".nd", "");
                     PixelsData pixels = image.getDefaultPixels();
                     int sizeZ = pixels.getSizeZ();
                     int sizeC = pixels.getSizeC();
@@ -145,38 +137,42 @@ public class RNA_Scope_Omero implements PlugIn {
                         Objects3DPopulation geneXDots = findGenePop(imgGeneX);
                         System.out.println(geneXDots.getNbObjects() + " gene dots X found");
                         
-                        // find background
+                        // find background from roi
                         Roi roiGeneRef = null, roiGeneX = null;
-                        if (!autoBackground) {
-                            // Find roi file for background
-                            if (image.getAnnotations().isEmpty()) {
-                                IJ.showStatus("No roi file found !");
-                                return;
-                            }
-                            
-                            List<FileAnnotationData> fileAnnotations = getFileAnnotations(image, null);
-                            // If exists roi in image
-                            String roiFile = rootName + ".zip";
-                            RoiManager rm = new RoiManager(false);
-                            for (FileAnnotationData file : fileAnnotations) {
-                                if (file.getFileName().equals(roiFile)) {
-                                    roiFile = file.getFilePath();
-                                    rm.reset();
-                                    rm.runCommand("Open", roiFile);
-                                    for (int r = 0; r < rm.getCount(); r++) {
-                                        Roi roi = rm.getRoi(r);
-                                        if (roi.getName().equals("generef"))
-                                            roiGeneRef = roi;
-                                        else
-                                            roiGeneX = roi;
-                                    }
+                        
+                        // Background detection methods
+                        
+                        switch (autoBackground) {
+                            // from rois
+                            case "From roi" :
+                                if (image.getAnnotations().isEmpty()) {
+                                    IJ.showStatus("No roi file found !");
+                                    return;
                                 }
-                            }
-                        }
-                        else {
-                            // Estimated background in gene reference and gene X channel
-                            roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, roiBgSize);
-                            roiGeneX = findRoiBbackgroundAuto(imgGeneX, roiBgSize);
+                                List<FileAnnotationData> fileAnnotations = getFileAnnotations(image, null);
+                                // If exists roi in image
+                                String roiFile = rootName + ".zip";
+                                // Find roi for gene ref and gene X
+                                RoiManager rm = new RoiManager(false);
+                                rm.runCommand("Open", roiFile);
+
+                                for (int r = 0; r < rm.getCount(); r++) {
+                                    Roi roi = rm.getRoi(r);
+                                    if (roi.getName().equals("generef"))
+                                        roiGeneRef = roi;
+                                    else
+                                        roiGeneX = roi;
+                                }
+                                break;
+                            // automatic search roi from calibration values     
+                            case "Auto" :
+                                roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
+                                roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneX);
+                                break;
+                            case "From calibration" :
+                                roiGeneRef = null;
+                                roiGeneX = null;
+                                break;
                         }
 
                         /*
@@ -188,12 +184,7 @@ public class RNA_Scope_Omero implements PlugIn {
 
 
                         Objects3DPopulation cellsPop = new Objects3DPopulation();
-                        // if no dilatation find cells with cellOutliner
-                        if (nucDil != 0) {
-                            cellsPop = findNucleus(imgNuc, imgGeneRef);
-                        }
-                        else
-                            cellsPop = findNucleus(imgNuc, null);
+                        cellsPop = findNucleus(imgNuc);
 
                         // Find cells parameters in geneRef and geneX images
                         ArrayList<Cell> listCells = tagsCells(cellsPop, geneRefDots, geneXDots, imgGeneRef, imgGeneX, roiGeneRef, roiGeneX);
