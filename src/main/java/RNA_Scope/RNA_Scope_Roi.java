@@ -5,8 +5,9 @@
 package RNA_Scope;
 
 
-import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
-import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
+
+import static RNA_Scope.RNA_Scope_Main.singleDotIntGeneRef;
+import static RNA_Scope.RNA_Scope_Main.singleDotIntGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
@@ -56,6 +57,7 @@ import org.apache.commons.io.FilenameUtils;
  * @author phm
  */
 public class RNA_Scope_Roi implements PlugIn {
+    
 
 private String imageDir = "";
 private String outDirResults = "";
@@ -85,7 +87,7 @@ private final Calibration cal = new Calibration();
      * @param channels
      * @return ch
      */
-    public static ArrayList dialog(String[] channels) {
+    public ArrayList dialog(String[] channels) {
         ArrayList ch = new ArrayList();
         GenericDialogPlus gd = new GenericDialogPlus("Parameters");
         gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
@@ -294,7 +296,8 @@ private final Calibration cal = new Calibration();
                         closeImages(imgGeneX);
 
                         output_Analyze.write(rootName+"\t"+geneVol+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
-                                geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
+                                geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+
+                                geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
                         output_Analyze.flush();
                     }
                 }
