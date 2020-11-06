@@ -5,33 +5,32 @@
  */
 package RNA_Scope;
 
-import static RNA_Scope.RNA_Scope.autoBackground;
-import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.output_detail_Analyze;
-import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.rootName;
+
+import static RNA_Scope.RNA_Scope_JDialog.imageData;
+import static RNA_Scope.RNA_Scope_JDialog.selectedDataset;
+import static RNA_Scope.RNA_Scope_JDialog.selectedProject;
+import static RNA_Scope.RNA_Scope_Main.autoBackground;
+import static RNA_Scope.RNA_Scope_Main.calibBgGeneRef;
+import static RNA_Scope.RNA_Scope_Main.calibBgGeneX;
+import static RNA_Scope.RNA_Scope_Main.output_detail_Analyze;
+import static RNA_Scope.RNA_Scope_Main.removeSlice;
+import static RNA_Scope.RNA_Scope_Main.rootName;
 import RNA_Scope_Utils.Cell;
-import static RNA_Scope_Utils.JDialogOmeroConnect.imageData;
-import static RNA_Scope_Utils.JDialogOmeroConnect.selectedDataset;
-import static RNA_Scope_Utils.JDialogOmeroConnect.selectedProject;
-import RNA_Scope_Utils.OmeroConnect;
+import static RNA_Scope_Utils.OmeroConnect.addImageToDataset;
+import static RNA_Scope_Utils.OmeroConnect.getFileAnnotations;
 import static RNA_Scope_Utils.OmeroConnect.addFileAnnotation;
 import static RNA_Scope_Utils.OmeroConnect.gateway;
-import static RNA_Scope_Utils.OmeroConnect.getFileAnnotations;
 import static RNA_Scope_Utils.OmeroConnect.getImageZ;
-import static RNA_Scope_Utils.OmeroConnect.getResolutionImage;
 import static RNA_Scope_Utils.OmeroConnect.securityContext;
-import static RNA_Scope_Utils.RNA_Scope_Processing.dialog;
+import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
-import static RNA_Scope_Utils.RNA_Scope_Processing.calibBgGeneRef;
-import static RNA_Scope_Utils.RNA_Scope_Processing.calibBgGeneX;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findNucleus;
-import static RNA_Scope_Utils.RNA_Scope_Processing.findRoiBbackgroundAuto;
-import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
+import static RNA_Scope_Utils.RNA_Scope_Processing.findRoiBackgroundAuto;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveCells;
 import static RNA_Scope_Utils.RNA_Scope_Processing.saveCellsLabelledImage;
+import static RNA_Scope_Utils.RNA_Scope_Processing.saveDotsImage;
 import static RNA_Scope_Utils.RNA_Scope_Processing.tagsCells;
 import ij.IJ;
 import ij.ImagePlus;
@@ -47,7 +46,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.parsers.ParserConfigurationException;
 import mcib3d.geom.Objects3DPopulation;
-import ome.model.units.BigResult;
 import omero.gateway.exception.DSAccessException;
 import omero.gateway.exception.DSOutOfServiceException;
 import omero.gateway.facility.MetadataFacility;
@@ -67,16 +65,17 @@ import org.xml.sax.SAXException;
 
 public class RNA_Scope_Omero implements PlugIn {
     
-    String tempDir = System.getProperty("java.io.tmpdir");
-    String outDirResults = tempDir+File.separator+"resulst.xls";
-    private String imageExtension = ".nd";
 
+    private String tempDir = System.getProperty("java.io.tmpdir");
+    private String outDirResults = tempDir+File.separator+"resulst.xls";
+    private String imageExtension = ".nd";
+    
+    
     
     
     @Override
     public void run(String arg) {
         try {
-            int imageNum = 0;
             ArrayList<String> ch = new ArrayList();
             // initialize results files
             InitResults(outDirResults);
@@ -93,27 +92,9 @@ public class RNA_Scope_Omero implements PlugIn {
                         channels[chs.getIndex()] = chs.getChannelLabeling();
                     }
 
-                    try {
-                        imageNum++;
-                        if (imageNum == 1) {
-                            try {
-                                double[] res = getResolutionImage(image);
-                                cal.pixelWidth = res[0];
-                                cal.pixelHeight = res[1];
-                                cal.pixelDepth = res[2];
-                            } catch (ExecutionException | BigResult ex) {
-                                Logger.getLogger(RNA_Scope_Omero.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                            // return the index for channels DAPI, Astro, Dots and ask for calibration if needed
-                            ch = dialog(channels, false, cal);
-                            if (ch == null) {
-                                IJ.showStatus("Plugin cancelled !!!");
-                                return;
-                            }
-                        }
-                        
+                    try {                        
                         int zStart = removeSlice;
-                        int zStop = (sizeZ - 2*removeSlice) <= 0 ? sizeZ : sizeZ - removeSlice;
+                        int zStop = (sizeZ - 2 * removeSlice) <= 0 ? sizeZ : sizeZ - removeSlice;
                         
                         /*
                         * Open Channel 1 (gene reference)
@@ -166,8 +147,8 @@ public class RNA_Scope_Omero implements PlugIn {
                                 break;
                             // automatic search roi from calibration values     
                             case "Auto" :
-                                roiGeneRef = findRoiBbackgroundAuto(imgGeneRef, calibBgGeneRef);
-                                roiGeneX = findRoiBbackgroundAuto(imgGeneX, calibBgGeneX);
+                                roiGeneRef = findRoiBackgroundAuto(imgGeneRef, calibBgGeneRef);
+                                roiGeneX = findRoiBackgroundAuto(imgGeneX, calibBgGeneX);
                                 break;
                             case "From calibration" :
                                 roiGeneRef = null;
@@ -204,21 +185,21 @@ public class RNA_Scope_Omero implements PlugIn {
                         saveCellsLabelledImage(imgNuc, cellsPop, imgGeneRef, imgGeneX, outDirResults, rootName);
 
                         // import  to Omero server
-                        OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Objects.tif", true);
+                        addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Objects.tif", true);
                         new File(outDirResults + rootName + "_Objects.tif").delete();
 
                         // save random color nucleus popualation
                         saveCells(imgNuc, cellsPop, outDirResults, rootName);
 
                         // import to Omero server
-                        OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Nucleus-ColorObjects.tif", true);
+                        addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_Nucleus-ColorObjects.tif", true);
                         new File(outDirResults + rootName + "_Nucleus-ColorObjects.tif").delete();
                         
                         // save dots segmentations
                         saveDotsImage (imgNuc, cellsPop, geneRefDots, geneXDots, outDirResults, rootName);
                         
                         // import to Omero server
-                        OmeroConnect.addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_DotsObjects.tif", true);
+                        addImageToDataset(selectedProject, selectedDataset, outDirResults, rootName + "_DotsObjects.tif", true);
                         new File(outDirResults + rootName + "_DotsObjects.tif").delete();
 
                         closeImages(imgNuc);
