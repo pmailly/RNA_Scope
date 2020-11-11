@@ -120,7 +120,10 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                 int sizeZ = reader.getSizeZ();
                 cal.pixelWidth = meta.getPixelsPhysicalSizeX(0).value().doubleValue();
                 cal.pixelHeight = cal.pixelWidth;
-                cal.pixelDepth = meta.getPixelsPhysicalSizeZ(0).value().doubleValue();
+                if (meta.getPixelsPhysicalSizeZ(0) != null)
+                            cal.pixelDepth = meta.getPixelsPhysicalSizeZ(0).value().doubleValue();
+                else
+                    cal.pixelDepth = 0.5;
                 cal.setUnit("microns");
                 System.out.println("x/y cal = " +cal.pixelWidth+", z cal = " + cal.pixelDepth+", stack size = " + sizeZ);
                 String channelsID = meta.getImageName(0);
@@ -135,21 +138,13 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
      * Add channels 
      */
     private void addChannels(List<String> channels){
-//        jComboBoxDAPICh.removeAllItems();
-//        jComboBoxGeneRefCh.removeAllItems();
-//        jComboBoxGeneXCh.removeAllItems();
-        if (jComboBoxDAPICh.getItemCount() == 0)
+        if (jComboBoxDAPICh.getItemCount() == 0) {
             for (String ch : channels) {
                 jComboBoxDAPICh.addItem(ch);
                 jComboBoxGeneRefCh.addItem(ch);
                 jComboBoxGeneXCh.addItem(ch);
             }
-        jComboBoxDAPICh.setSelectedIndex(0);
-        rna.channels.add(0,channels.get(0));
-        jComboBoxGeneRefCh.setSelectedIndex(1);
-        rna.channels.add(1,channels.get(1));
-        jComboBoxGeneXCh.setSelectedIndex(2);
-        rna.channels.add(2,channels.get(2));
+        }
     }
             
 
@@ -894,6 +889,9 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
             actionListener = false;
             addChannels(chs);
             actionListener = true;
+            jComboBoxDAPICh.setSelectedIndex(0);
+            jComboBoxGeneRefCh.setSelectedIndex(1);
+            jComboBoxGeneXCh.setSelectedIndex(2);
         }
         if (rna.imagesFolder != null) {
             rna.localImages = true;
