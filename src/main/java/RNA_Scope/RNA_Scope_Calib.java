@@ -6,11 +6,12 @@
 package RNA_Scope;
 
 
-import static RNA_Scope.RNA_Scope.ghostDots;
 import RNA_Scope_Utils.Dot;
 import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
+import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
+import static RNA_Scope_Utils.RNA_Scope_Processing.readXML;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Roi;
@@ -45,11 +46,11 @@ import org.xml.sax.SAXException;
  * @author phm
  */
 public class RNA_Scope_Calib implements PlugIn {
-
+    
 private String imageDir = "";
 private String outDirResults = "";
 private final Calibration cal = new Calibration();   
-private static BufferedWriter output_dotCalib;
+private BufferedWriter output_dotCalib;
 
     
     /**
@@ -81,7 +82,7 @@ private static BufferedWriter output_dotCalib;
      * @param popObj
      * @param img 
      */
-    private static void labelsObject (Objects3DPopulation popObj, ImagePlus img, int fontSize) {
+    private void labelsObject (Objects3DPopulation popObj, ImagePlus img, int fontSize) {
         Font tagFont = new Font("SansSerif", Font.PLAIN, fontSize);
         String name;
         for (int n = 0; n < popObj.getNbObjects(); n++) {
@@ -106,7 +107,7 @@ private static BufferedWriter output_dotCalib;
      * @param outDirResults
      * @param rootName
      */
-    public static void saveDotsImage (ImagePlus img, Objects3DPopulation dotsPop, String outDirResults, String rootName) {
+    public void saveDotsImage (ImagePlus img, Objects3DPopulation dotsPop, String outDirResults, String rootName) {
         // red dots geneRef , dots green geneX, blue nucDilpop
         ImageHandler imgDots = ImageHandler.wrap(img).createSameDimensions();
         // draw dots population
@@ -143,7 +144,6 @@ private static BufferedWriter output_dotCalib;
             int imageNum = 0; 
             String rootName = "";
             ArrayList<String> ch = new ArrayList<>();
-            ghostDots = false;
             for (String f : imageFile) {
                 // Find tif files no dconv TIF deconv
                 String fileExt = FilenameUtils.getExtension(f);
@@ -189,11 +189,11 @@ private static BufferedWriter output_dotCalib;
                         rm.runCommand("Open", roiFile);
                         
                         // Read dots coordinates in xml file
-                        ArrayList<Point3D> dotsCenter = RNA_Scope_Processing.readXML(xmlFile);
+                        ArrayList<Point3D> dotsCenter = readXML(xmlFile);
                         System.out.println("Pointed dots found = "+dotsCenter.size());
                         
                         // 3D dots segmentation
-                        Objects3DPopulation dotsPop = RNA_Scope_Processing.findGenePop(img);
+                        Objects3DPopulation dotsPop = findGenePop(img);
                         System.out.println("Total dots found = "+dotsPop.getNbObjects());
                         
                         

@@ -1,25 +1,24 @@
 package RNA_Scope_Utils;
 
 
-import static RNA_Scope.RNA_Scope.autoBackgroundMethods;
-import static RNA_Scope.RNA_Scope.autoBackground;
-import static RNA_Scope.RNA_Scope.cal;
-import static RNA_Scope.RNA_Scope.ghostDots;
-import static RNA_Scope.RNA_Scope.pixDepth;
-import static RNA_Scope.RNA_Scope.maxNucVol;
-import static RNA_Scope.RNA_Scope.minNucVol;
-import static RNA_Scope.RNA_Scope.nucDil;
-import static RNA_Scope.RNA_Scope.output_detail_Analyze;
-import static RNA_Scope.RNA_Scope.removeSlice;
-import static RNA_Scope.RNA_Scope.roiBgSize;
-import static RNA_Scope.RNA_Scope.singleDotIntGeneRef;
-import static RNA_Scope.RNA_Scope.singleDotIntGeneX;
-import fiji.util.gui.GenericDialogPlus;
+
+import static RNA_Scope.RNA_Scope_Main.autoBackground;
+import static RNA_Scope.RNA_Scope_Main.cal;
+import static RNA_Scope.RNA_Scope_Main.calibBgGeneRef;
+import static RNA_Scope.RNA_Scope_Main.calibBgGeneX;
+import static RNA_Scope.RNA_Scope_Main.maxNucVol;
+import static RNA_Scope.RNA_Scope_Main.minNucVol;
+import static RNA_Scope.RNA_Scope_Main.nucDil;
+import static RNA_Scope.RNA_Scope_Main.output_detail_Analyze;
+import static RNA_Scope.RNA_Scope_Main.roiBgSize;
+import static RNA_Scope.RNA_Scope_Main.singleDotIntGeneRef;
+import static RNA_Scope.RNA_Scope_Main.singleDotIntGeneX;
+import static RNA_Scope.RNA_Scope_Main.thMethod;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.DialogListener;
 import ij.gui.Roi;
+import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -28,9 +27,7 @@ import ij.plugin.Duplicator;
 import ij.plugin.GaussianBlur3D;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.filter.Analyzer;
-import ij.process.AutoThresholder;
 import ij.process.ImageProcessor;
-import java.awt.Color;
 import java.awt.Font;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -67,76 +64,10 @@ import org.xml.sax.SAXException;
  * @author phm
  */
 
-public abstract class RNA_Scope_Processing implements DialogListener{
+public class RNA_Scope_Processing {
     
     public static CLIJ2 clij2 = CLIJ2.getInstance();
-    private static String threshold = AutoThresholder.Method.Otsu.toString();
-    public static double calibBgGeneRef = 100;
-    public static double calibBgGeneX = 100;
-    
-    
-    
-    /**
-     * Dialog ask for channels order
-     * @param channels
-     * @param showCal
-     * @param cal
-     * @return ch
-
-     */
-    public static ArrayList dialog(String[] channels, boolean showCal, Calibration cal) {
-        ArrayList ch = new ArrayList();
-        String[] thresholdMethod = AutoThresholder.getMethods();
-        GenericDialogPlus gd = new GenericDialogPlus("Parameters");
-        gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
-        gd.addChoice("DAPI           : ", channels, channels[0]);
-        gd.addChoice("Gene Reference : ", channels, channels[1]);
-        gd.addChoice("Gene X         : ", channels, channels[2]);
-        gd.addMessage("nucleus parameters", Font.getFont("Monospace"), Color.blue);
-        gd.addChoice("Threshold method         : ", thresholdMethod, thresholdMethod[11]);
-        gd.addNumericField("Min Volume size    : ", minNucVol, 2);
-        gd.addNumericField("Max Volume size    : ", maxNucVol, 2);
-        gd.addNumericField("Nucleus dilatation : ", nucDil, 2);
-        gd.addNumericField("Section to remove  : ",removeSlice, 0);
-        gd.addMessage("Single dot calibration", Font.getFont("Monospace"), Color.blue);
-        gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
-        gd.addNumericField("Gene X single dot mean intensity         : ", singleDotIntGeneX, 0);
-        gd.addMessage("Background detection", Font.getFont("Monospace"), Color.blue);
-        gd.addChoice("Auto background ", autoBackgroundMethods, autoBackgroundMethods[0]);
-        gd.addNumericField("Size of background box size : ", roiBgSize, 0);
-        gd.addNumericField("Gene reference background intensity from calibration : ", calibBgGeneRef, 0);
-        gd.addNumericField("Gene X background intensity from calibration : ", calibBgGeneX, 0);
-        gd.addCheckbox("Remove ghost dots ", ghostDots);
-        if (showCal) {
-            gd.addMessage("No Z step calibration found", Font.getFont("Monospace"), Color.red);
-            gd.addNumericField("XY pixel size : ", cal.pixelWidth, 3);
-            gd.addNumericField("Z pixel size : ", pixDepth, 3);
-        }
-        gd.showDialog();
-        ch.add(0, gd.getNextChoice());
-        ch.add(1, gd.getNextChoice());
-        ch.add(2, gd.getNextChoice());
-        threshold = gd.getNextChoice();
-        minNucVol = gd.getNextNumber();
-        maxNucVol = gd.getNextNumber();
-        nucDil = (float)gd.getNextNumber();
-        removeSlice = (int)gd.getNextNumber();
-        singleDotIntGeneRef = gd.getNextNumber();
-        singleDotIntGeneX = gd.getNextNumber();
-        autoBackground = gd.getNextChoice().toString();
-        roiBgSize = (int)gd.getNextNumber();
-        calibBgGeneRef = (int)gd.getNextNumber();
-        calibBgGeneX = (int)gd.getNextNumber();
-        ghostDots = gd.getNextBoolean();
-        if (showCal) {
-            cal.pixelWidth = gd.getNextNumber();
-            cal.pixelDepth = gd.getNextNumber();
-        }
-        gd.dispose();
-        if(gd.wasCanceled())
-            ch = null;
-        return(ch);
-    }
+      
     
     /**
      *
@@ -154,7 +85,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
      * @return pop
      */
 
-    public static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL) {
+    private static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL) {
         ClearCLBuffer output = clij2.create(imgCL);
         clij2.connectedComponentsLabelingBox(imgCL, output);
         ImagePlus imgLab  = clij2.pull(output);
@@ -164,6 +95,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
         clij2.release(output);
         return pop;
     }  
+    
     
     /**
      * gaussian 3D filter 
@@ -175,7 +107,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
      * @return imgOut
      */
  
-    public static ClearCLBuffer gaussianBlur3D(ClearCLBuffer imgCL, double sizeX, double sizeY, double sizeZ) {
+    public ClearCLBuffer gaussianBlur3D(ClearCLBuffer imgCL, double sizeX, double sizeY, double sizeZ) {
         ClearCLBuffer imgOut = clij2.create(imgCL);
         clij2.gaussianBlur3D(imgCL, imgOut, sizeX, sizeY, sizeZ);
         clij2.release(imgCL);
@@ -274,16 +206,12 @@ public abstract class RNA_Scope_Processing implements DialogListener{
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
-        ClearCLBuffer imgCLBin;
         ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
         clij2.release(imgCLMed);
-        imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
         clij2.release(imgCLDOG);
-        Objects3DPopulation genePop = new Objects3DPopulation();
-        if (ghostDots)
-            genePop = getPopFromClearBuffer(open(imgCLBin)); 
-        else
-            genePop = getPopFromClearBuffer(imgCLBin);
+        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
+        
         clij2.release(imgCLBin);       
         return(genePop);
     }
@@ -417,7 +345,8 @@ public abstract class RNA_Scope_Processing implements DialogListener{
      * @return 
      */
     private static Object3DVoxels dilCellObj(ImagePlus img, Object3D obj) {
-        Object3D objDil = obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), (float)(nucDil/cal.pixelDepth));
+        Object3D objDil = obj.getDilatedObject((float)(nucDil/cal.pixelWidth), (float)(nucDil/cal.pixelHeight), 
+                (float)(nucDil/cal.pixelDepth));
         // check if object go outside image
         if (objDil.getXmin() < 0 || objDil.getXmax() > img.getWidth() || objDil.getYmin() < 0 || objDil.getYmax() > img.getHeight()
                 || objDil.getZmin() < 0 || objDil.getZmax() > img.getNSlices()) {
@@ -429,7 +358,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
     }
     
     
-    public static  Objects3DPopulation findNucleus(ImagePlus imgNuc) {
+    public  static Objects3DPopulation findNucleus(ImagePlus imgNuc) {
         Objects3DPopulation nucPopOrg = new Objects3DPopulation();
         nucPopOrg = find_nucleus2(imgNuc);
         System.out.println("-- Total nucleus Population :"+nucPopOrg.getNbObjects());
@@ -460,7 +389,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
             IJ.showStatus("Finding nucleus section "+i+" / "+img.getStackSize());
             img.setZ(i);
             img.updateAndDraw();
-            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method="+threshold+" outlier_radius=50 outlier_threshold=1 max_nucleus_size=100 "
+            IJ.run(img, "Nuclei Outline", "blur=20 blur2=30 threshold_method="+thMethod+" outlier_radius=50 outlier_threshold=1 max_nucleus_size=100 "
                     + "min_nucleus_size=10 erosion=5 expansion_inner=5 expansion=5 results_overlay");
             img.setZ(1);
             img.updateAndDraw();
@@ -475,7 +404,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
         IJ.showStatus("Starting watershed...");
         ImagePlus imgWater = WatershedSplit(imgStack, 8);
         closeImages(imgStack);
-        imgWater.setCalibration(imgNuc.getCalibration());
+        imgWater.setCalibration(cal);
         Objects3DPopulation cellPop = new Objects3DPopulation(imgWater);
         cellPop.removeObjectsTouchingBorders(imgWater, false);
         closeImages(imgWater);
@@ -519,7 +448,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
      * @param size
      * @return 
      */
-    public static Roi findRoiBbackgroundAuto(ImagePlus img, double bgGene) {
+    public static Roi findRoiBackgroundAuto(ImagePlus img, double bgGene) {
         // scroll gene image and measure bg intensity in roi 
         // take roi at intensity nearest from bgGene
         
@@ -637,7 +566,7 @@ public abstract class RNA_Scope_Processing implements DialogListener{
     public static void InitResults(String outDirResults) throws IOException {
         // initialize results files
         // Detailed results
-        FileWriter  fwAnalyze_detail = new FileWriter(outDirResults + "detailed_results.xls",false);
+        FileWriter  fwAnalyze_detail = new FileWriter(outDirResults + autoBackground +"_results.xls",false);
         output_detail_Analyze = new BufferedWriter(fwAnalyze_detail);
         // write results headers
         output_detail_Analyze.write("Image Name\t#Cell\tCell Vol (pixel3)\tCell Z center\tCell Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"

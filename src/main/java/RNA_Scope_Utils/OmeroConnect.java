@@ -1,6 +1,4 @@
 package RNA_Scope_Utils;
-
-
 /*
  * To the extent possible under law, the OME developers have waived
  * all copyright and related or neighboring rights to this tutorial code.
@@ -9,13 +7,11 @@ package RNA_Scope_Utils;
  *     http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+import static RNA_Scope.RNA_Scope_JDialog.serverName;
+import static RNA_Scope.RNA_Scope_JDialog.serverPort;
+import static RNA_Scope.RNA_Scope_JDialog.userID;
+import static RNA_Scope.RNA_Scope_JDialog.userPass;
 import ij.IJ;
-import ij.gui.Roi;
-import ij.gui.Line;
-import ij.gui.OvalRoi;
-import ij.gui.PointRoi;
-import ij.gui.PolygonRoi;
-import java.awt.geom.Point2D;
 import loci.formats.in.DefaultMetadataOptions;
 import loci.formats.in.MetadataLevel;
 import mcib3d.geom.Object3D;
@@ -52,7 +48,7 @@ import omero.model.*;
 import omero.model.enums.ChecksumAlgorithmSHA1160;
 import omero.model.enums.UnitsLength;
 import omero.sys.ParametersI;
-import java.awt.Polygon;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -534,65 +530,35 @@ public class OmeroConnect {
         Collection<ROIData> roiDatas = roifac.saveROIs(securityContext, image.getId(), Arrays.asList(data));
     }
     
-    
-    /**
+    /*
     Retrieve image rois
-     * @param image
-     * @return roiList
-     * @throws java.util.concurrent.ExecutionException
-     * @throws omero.gateway.exception.DSOutOfServiceException
-     * @throws omero.gateway.exception.DSAccessException
     */
     
     public static List<Roi> getImageRois (ImageData image) throws ExecutionException, DSOutOfServiceException, DSAccessException {
-        List<Roi> roiList = new ArrayList<>();
+        
         ROIFacility roifac = gateway.getFacility(ROIFacility.class);
         //Retrieve the roi linked to an image
-        List<ROIResult> rois_result = roifac.loadROIs(securityContext, image.getId());
-        Roi roi = null;
-        for (ROIResult rois : rois_result) {
-            for (ROIData r : rois.getROIs()) {
-                for (ShapeData s : r.getShapes()) {
-                    long id = s.getId();
-                    int time = s.getT();
-                    int z = s.getZ();
-                    if (s instanceof RectangleData) {
-                        RectangleData rectData = (RectangleData) s;
-                        roi = new Roi(rectData.getX(), rectData.getY(), rectData.getWidth(), rectData.getHeight());
-                    }
-                    else if (s instanceof EllipseData) {
-                        EllipseData ellipse = (EllipseData) s;
-                        roi = new OvalRoi(ellipse.getX(), ellipse.getY(), ellipse.getRadiusX(), ellipse.getRadiusY());
-                    }
-                    else if (s instanceof PointData) {
-                        PointData pt = (PointData) s;
-                        roi = new PointRoi(pt.getX(), pt.getY());
-                    }
-                    else if (s instanceof LineData) {
-                        LineData lineData = (LineData) s;
-                        roi = new Line(lineData.getX1(), lineData.getY1(), lineData.getX2(), lineData.getY2());
-                    }
-                    else if (s instanceof MaskData) {
-                        MaskData maskData = (MaskData) s;
-                        roi = new Roi(maskData.getX(), maskData.getY(), maskData.getWidth(), maskData.getHeight());
-                        
-                    }
-                    else if (s instanceof PolygonData) {
-                        PolygonData polyData = (PolygonData) s;
-                        List<Point2D.Double> points = polyData.getPoints();
-                        Polygon poly = new Polygon();
-                        for (Point2D.Double pt : points) {
-                            poly.addPoint((int)Math.round(pt.getX()), (int)Math.round(pt.getY()));
-                        }
-                        roi = new PolygonRoi(poly, Roi.POLYGON);
-                    }
-                }
-                roiList.add((Roi)roi);
+        List<ROIResult> roiresults = roifac.loadROIs(securityContext, image.getId());
+        ROIResult r = roiresults.iterator().next();
+        if (r == null) 
+            return null;
+        Collection<ROIData> rois = r.getROIs();
+        List<ShapeData> list;
+        Iterator<ROIData> j = rois.iterator();
+        while (j.hasNext()) {
+          list = j.next().getShapes();
+          if (list == null) {
+                System.out.println(" NO ROI");
+                return null;
+            }
+            // Do something
+            for (ShapeData shapeData : list) {
+              String roiString = shapeData.getROICoordinate().toString();
+                System.out.println(roiString);
             }
         }
-        return(roiList);
+        return(null);
     }
-    
     
     public List<RectangleData> getRectangleROIS(ImageData image) throws Exception {
         DataManagerFacility dm = gateway.getFacility(DataManagerFacility.class);
@@ -711,10 +677,10 @@ public class OmeroConnect {
         config.contOnError.set(false);
         config.debug.set(false);
 
-        config.hostname.set(JDialogOmeroConnect.serverName);
-        config.port.set(JDialogOmeroConnect.serverPort);
-        config.username.set(JDialogOmeroConnect.userID);
-        config.password.set(JDialogOmeroConnect.userPass);
+        config.hostname.set(serverName);
+        config.port.set(serverPort);
+        config.username.set(userID);
+        config.password.set(userPass);
 
         // use .target instead ??
         config.target.set("Dataset:" + datasetData.getId());
@@ -782,10 +748,10 @@ public class OmeroConnect {
         config.contOnError.set(false);
         config.debug.set(false);
 
-        config.hostname.set(JDialogOmeroConnect.serverName);
-        config.port.set(JDialogOmeroConnect.serverPort);
-        config.username.set(JDialogOmeroConnect.userID);
-        config.password.set(JDialogOmeroConnect.userPass);
+        config.hostname.set(serverName);
+        config.port.set(serverPort);
+        config.username.set(userID);
+        config.password.set(userPass);
 
 // the imported image will go into 'orphaned images' unless
 // you specify a particular existing dataset like this:
@@ -1212,12 +1178,12 @@ public class OmeroConnect {
         link = (ImageAnnotationLink) dm.saveAndReturnObject(securityContext, link);
     }
 
-    public void addFileAnnotation(ImageData image, File file, String fileType) throws ExecutionException, DSAccessException, DSOutOfServiceException {
-        addFileAnnotation(image, file, fileType, "attached");
+    public static void addFileAnnotation(ImageData image, File file) throws ExecutionException, DSAccessException, DSOutOfServiceException {
+        addFileAnnotation(image, file, "attached");
     }
 
 
-    public static void addFileAnnotation(ImageData image, File file, String fileType, String comment) throws ExecutionException, DSAccessException, DSOutOfServiceException {
+    public static void addFileAnnotation(ImageData image, File file, String comment) throws ExecutionException, DSAccessException, DSOutOfServiceException {
         DataManagerFacility dm = gateway.getFacility(DataManagerFacility.class);
         // checking if annotation exists
         FileAnnotationData fileAnnotationData = getFileAnnotation(image, file.getName(), null);
@@ -1226,7 +1192,7 @@ public class OmeroConnect {
             dm.delete(securityContext, fileAnnotationData.asIObject());
         }
         IJ.log("Attaching " + file.getAbsolutePath() + " to " + image.getName());
-        Future<FileAnnotationData> annotationData = dm.attachFile(securityContext, file, fileType, comment, null, image);
+        Future<FileAnnotationData> annotationData = dm.attachFile(securityContext, file, "application/octet-stream", comment, null, image);
     }
 
     // TODO check and update
@@ -1255,7 +1221,17 @@ public class OmeroConnect {
         link = (ProjectAnnotationLink) dm.saveAndReturnObject(securityContext, link);
     }
 
-
+    public static void addFileAnnotation(ImageData image, File file, String fileType, String comment) throws ExecutionException, DSAccessException, DSOutOfServiceException {
+        DataManagerFacility dm = gateway.getFacility(DataManagerFacility.class);
+        // checking if annotation exists
+        FileAnnotationData fileAnnotationData = getFileAnnotation(image, file.getName(), null);
+        if (fileAnnotationData != null) {
+            IJ.log("The attachment " + fileAnnotationData.getFileName() + " already exists, deleting.");
+            dm.delete(securityContext, fileAnnotationData.asIObject());
+        }
+        IJ.log("Attaching " + file.getAbsolutePath() + " to " + image.getName());
+        Future<FileAnnotationData> annotationData = dm.attachFile(securityContext, file, fileType, comment, null, image);
+    }
     private static FileAnnotation createFileAnnotation(File file) throws java.util.concurrent.ExecutionException, java.io.IOException, DSAccessException, DSOutOfServiceException, ServerError {
         int INC = 262144;
         DataManagerFacility dm = gateway.getFacility(DataManagerFacility.class);

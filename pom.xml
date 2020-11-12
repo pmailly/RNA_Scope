@@ -7,7 +7,7 @@
         
 	<groupId>cirb</groupId>
 	<artifactId>mRNA_Scope_Omero</artifactId>
-	<version>1.1.0</version>
+	<version>1.6.0</version>
         <packaging>jar</packaging>
 	<name>plugins/mRNA_Scope_Omero</name>
 	<description>
