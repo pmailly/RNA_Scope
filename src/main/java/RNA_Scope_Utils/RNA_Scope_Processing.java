@@ -18,7 +18,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -220,7 +219,7 @@ public class RNA_Scope_Processing {
     /**
      * ramdom color nucleus population
      */
-    public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img) {
+    public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img, boolean label) {
         //create image objects population
         Font tagFont = new Font("SansSerif", Font.PLAIN, 30);
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
@@ -229,17 +228,19 @@ public class RNA_Scope_Processing {
             int color = (int)(Math.random() * (255 - 1 + 1) + 1);
             Object3D obj = cellsPop.getObject(i);
             obj.draw(imgObj, color);
-            String name = Integer.toString(i+1);
-            int[] box = obj.getBoundingBox();
-            int z = (int)obj.getCenterZ();
-            int x = box[0] - 1;
-            int y = box[2] - 1;
-            imgObj.getImagePlus().setSlice(z+1);
-            ImageProcessor ip = imgObj.getImagePlus().getProcessor();
-            ip.setFont(tagFont);
-            ip.setColor(color);
-            ip.drawString(name, x, y);
-            imgObj.getImagePlus().updateAndDraw();
+            if (label) {
+                String name = Integer.toString(i+1);
+                int[] box = obj.getBoundingBox();
+                int z = (int)obj.getCenterZ();
+                int x = box[0] - 1;
+                int y = box[2] - 1;
+                imgObj.getImagePlus().setSlice(z+1);
+                ImageProcessor ip = imgObj.getImagePlus().getProcessor();
+                ip.setFont(tagFont);
+                ip.setColor(color);
+                ip.drawString(name, x, y);
+                imgObj.getImagePlus().updateAndDraw();
+            }
         } 
         return(imgObj.getImagePlus());
     } 
@@ -584,7 +585,7 @@ public class RNA_Scope_Processing {
      * @param rootName
      */
     public static void saveCells (ImagePlus imgNuc, Objects3DPopulation cellsPop, String outDirResults, String rootName) {
-        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc);
+        ImagePlus imgColorPop = colorPop (cellsPop, imgNuc, false);
         IJ.run(imgColorPop, "3-3-2 RGB", "");
         FileSaver ImgColorObjectsFile = new FileSaver(imgColorPop);
         ImgColorObjectsFile.saveAsTiff(outDirResults + rootName + "_Cells-ColorObjects.tif");
