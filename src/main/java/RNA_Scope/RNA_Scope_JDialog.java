@@ -16,7 +16,6 @@ import static RNA_Scope_Utils.OmeroConnect.getUserId;
 import ij.IJ;
 import ij.measure.Calibration;
 import ij.process.AutoThresholder;
-import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;

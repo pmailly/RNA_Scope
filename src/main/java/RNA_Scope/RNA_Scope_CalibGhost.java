@@ -77,6 +77,21 @@ private static BufferedWriter output_dotCalib;
         return(dots);
     }
     
+    /**
+     * Find dot with same index as roi
+     * @param r
+     * @return 
+     */
+    private Dot findDot(ArrayList<Dot> dots, int r) {
+        Dot dot = null;
+        for (Dot d : dots) {
+            if (d.getIndex() == r)
+                dot = d;
+        }
+        return(dot);
+    }
+    
+    
     
     /**
      * Label object
@@ -213,17 +228,19 @@ private static BufferedWriter output_dotCalib;
                         double sumCorIntDots = 0;
                         for (int r = 0; r < rm.getCount(); r++) {
                             Roi roi = rm.getRoi(r);
-                            Dot dot = dots.get(r);
-                            img.setRoi(roi);
-                            ImagePlus imgCrop = img.crop("stack");
-                            double bgDotInt = find_background(imgCrop, dot.getZmin(), dot.getZmax());
-                            double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
-                            sumCorIntDots += corIntDot;
-                            // write results
-                            output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
+                            Dot dot = findDot(dots, r);
+                            if (dot != null) {
+                                img.setRoi(roi);
+                                ImagePlus imgCrop = img.crop("stack");
+                                double bgDotInt = find_background(imgCrop, dot.getZmin(), dot.getZmax());
+                                double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
+                                sumCorIntDots += corIntDot;
+                                // write results
+                                output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
                                     "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
-                            output_dotCalib.flush();
-                            closeImages(imgCrop);
+                                output_dotCalib.flush();
+                                closeImages(imgCrop);
+                            }
                         }
                         double MeanIntDot = sumCorIntDots / rm.getCount();
                         output_dotCalib.write("\t\t\t\t\t\t\t\t"+MeanIntDot+"\n");
