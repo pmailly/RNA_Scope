@@ -22,7 +22,6 @@ import static RNA_Scope_Utils.OmeroConnect.addFileAnnotation;
 import static RNA_Scope_Utils.OmeroConnect.gateway;
 import static RNA_Scope_Utils.OmeroConnect.getImageZ;
 import static RNA_Scope_Utils.OmeroConnect.securityContext;
-import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.InitResults;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
@@ -104,7 +103,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         ImagePlus imgGeneRef = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
                         
                         // Find gene reference dots
-                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
+                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef, null);
                         System.out.println(geneRefDots.getNbObjects() + " gene dots ref found");
                         
                         /*
@@ -115,7 +114,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         ImagePlus imgGeneX = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
 
                         // Find gene X dots
-                        Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                        Objects3DPopulation geneXDots = findGenePop(imgGeneX, null);
                         System.out.println(geneXDots.getNbObjects() + " gene dots X found");
                         
                         // find background from roi

@@ -7,7 +7,6 @@ package RNA_Scope;
 
 
 import RNA_Scope_Utils.Dot;
-import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
@@ -76,21 +75,6 @@ private static BufferedWriter output_dotCalib;
         }
         return(dots);
     }
-    
-    /**
-     * Find dot with same index as roi
-     * @param r
-     * @return 
-     */
-    private Dot findDot(ArrayList<Dot> dots, int r) {
-        Dot dot = null;
-        for (Dot d : dots) {
-            if (d.getIndex() == r)
-                dot = d;
-        }
-        return(dot);
-    }
-    
     
     
     /**
@@ -209,7 +193,7 @@ private static BufferedWriter output_dotCalib;
                         System.out.println("Pointed dots found = "+dotsCenter.size());
                         
                         // 3D dots segmentation
-                        Objects3DPopulation dotsPop = findGenePop(img);
+                        Objects3DPopulation dotsPop = findGenePop(img, null);
                         System.out.println("Total dots found = "+dotsPop.getNbObjects());
                         
                         
@@ -228,19 +212,17 @@ private static BufferedWriter output_dotCalib;
                         double sumCorIntDots = 0;
                         for (int r = 0; r < rm.getCount(); r++) {
                             Roi roi = rm.getRoi(r);
-                            Dot dot = findDot(dots, r);
-                            if (dot != null) {
-                                img.setRoi(roi);
-                                ImagePlus imgCrop = img.crop("stack");
-                                double bgDotInt = find_background(imgCrop, dot.getZmin(), dot.getZmax());
-                                double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
-                                sumCorIntDots += corIntDot;
-                                // write results
-                                output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
+                            Dot dot = dots.get(r);
+                            img.setRoi(roi);
+                            ImagePlus imgCrop = img.crop("stack");
+                            double bgDotInt = find_background(imgCrop, dot.getZmin(), dot.getZmax());
+                            double corIntDot = dot.getIntDot() - (bgDotInt * dot.getVolDot());
+                            sumCorIntDots += corIntDot;
+                            // write results
+                            output_dotCalib.write(rootName+"\t"+r+"\t"+dot.getVolDot()+"\t"+dot.getIntDot()+"\t"+bgDotInt+"\t"+corIntDot+
                                     "\t"+dot.getZCenter()+"\t"+(dot.getZmax()-dot.getZmin())+"\n");
-                                output_dotCalib.flush();
-                                closeImages(imgCrop);
-                            }
+                            output_dotCalib.flush();
+                            closeImages(imgCrop);
                         }
                         double MeanIntDot = sumCorIntDots / rm.getCount();
                         output_dotCalib.write("\t\t\t\t\t\t\t\t"+MeanIntDot+"\n");

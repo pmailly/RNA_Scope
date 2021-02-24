@@ -18,7 +18,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Roi;
-import ij.gui.WaitForUserDialog;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.measure.Measurements;
@@ -34,20 +33,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import loci.common.services.DependencyException;
-import loci.common.services.ServiceException;
-import loci.common.services.ServiceFactory;
-import loci.formats.FormatException;
-import loci.formats.meta.IMetadata;
-import loci.formats.services.OMEXMLService;
-import loci.plugins.util.ImageProcessorReader;
 import mcib3d.geom.Object3D;
 import mcib3d.geom.Object3DVoxels;
 import mcib3d.geom.Objects3DPopulation;
@@ -61,7 +50,6 @@ import mcib3d.image3d.processing.FastFilters3D;
 import mcib3d.image3d.regionGrowing.Watershed3D;
 import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.haesleinhuepf.clij2.CLIJ2;
-import org.apache.commons.io.FilenameUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -89,6 +77,22 @@ public class RNA_Scope_Processing {
         img.close();
     }
 
+    /**
+     * Clear out side roi
+     * @param img
+     * @param roi
+     */
+    public static void clearOutSide(ImagePlus img, Roi roi) {
+        for (int n = 1; n <= img.getNSlices(); n++) {
+            ImageProcessor ip = img.getImageStack().getProcessor(n);
+            ip.setRoi(roi);
+            ip.setBackgroundValue(0);
+            ip.setColor(0);
+            ip.fillOutside(roi);
+        }
+        img.updateAndDraw();
+    }
+    
     
   /**
      * return objects population in an binary image
@@ -97,11 +101,15 @@ public class RNA_Scope_Processing {
      * @return pop
      */
 
-    private static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL) {
+    private static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL, Roi roi) {
         ClearCLBuffer output = clij2.create(imgCL);
         clij2.connectedComponentsLabelingBox(imgCL, output);
         ImagePlus imgLab  = clij2.pull(output);
         imgLab.setCalibration(cal);
+        roi.setLocation(0, 0);
+        if (roi != null) {
+            clearOutSide(imgLab, roi);
+        }   
         ImageInt labels = new ImageLabeller().getLabels(ImageHandler.wrap(imgLab));
         Objects3DPopulation pop = new Objects3DPopulation(labels);
         clij2.release(output);
@@ -213,7 +221,7 @@ public class RNA_Scope_Processing {
      * @param imgGeneRef
      * @return genePop
      */
-    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef) {
+    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef, Roi roi) {
         ImagePlus img = new Duplicator().run(imgGeneRef);
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
@@ -222,7 +230,7 @@ public class RNA_Scope_Processing {
         clij2.release(imgCLMed);
         ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
         clij2.release(imgCLDOG);
-        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
+        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin, roi);
         
         clij2.release(imgCLBin);       
         return(genePop);

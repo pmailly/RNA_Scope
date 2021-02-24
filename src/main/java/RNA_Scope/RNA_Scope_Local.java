@@ -146,11 +146,11 @@ public class RNA_Scope_Local implements PlugIn {
                     }
 
                     // Find gene reference dots
-                    Objects3DPopulation geneRefDots = findGenePop(imgGeneRef);
+                    Objects3DPopulation geneRefDots = findGenePop(imgGeneRef, null);
                     System.out.println("Finding gene "+geneRefDots.getNbObjects()+" reference dots");
 
                     //Find gene X dots
-                    Objects3DPopulation geneXDots = findGenePop(imgGeneX);
+                    Objects3DPopulation geneXDots = findGenePop(imgGeneX, null);
                     System.out.println("Finding gene "+geneXDots.getNbObjects()+" X dots");
 
                     /*
