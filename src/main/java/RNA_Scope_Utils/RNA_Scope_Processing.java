@@ -76,6 +76,23 @@ public class RNA_Scope_Processing {
         img.flush();
         img.close();
     }
+
+    /**
+     * Clear out side roi
+     * @param img
+     * @param roi
+     */
+    public static void clearOutSide(ImagePlus img, Roi roi) {
+        for (int n = 1; n <= img.getNSlices(); n++) {
+            ImageProcessor ip = img.getImageStack().getProcessor(n);
+            ip.setRoi(roi);
+            ip.setBackgroundValue(0);
+            ip.setColor(0);
+            ip.fillOutside(roi);
+        }
+        img.updateAndDraw();
+    }
+    
     
   /**
      * return objects population in an binary image
@@ -84,11 +101,15 @@ public class RNA_Scope_Processing {
      * @return pop
      */
 
-    private static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL) {
+    private static Objects3DPopulation getPopFromClearBuffer(ClearCLBuffer imgCL, Roi roi) {
         ClearCLBuffer output = clij2.create(imgCL);
         clij2.connectedComponentsLabelingBox(imgCL, output);
         ImagePlus imgLab  = clij2.pull(output);
         imgLab.setCalibration(cal);
+        if (roi != null) {
+            roi.setLocation(0, 0);
+            clearOutSide(imgLab, roi);
+        }   
         ImageInt labels = new ImageLabeller().getLabels(ImageHandler.wrap(imgLab));
         Objects3DPopulation pop = new Objects3DPopulation(labels);
         clij2.release(output);
@@ -200,7 +221,7 @@ public class RNA_Scope_Processing {
      * @param imgGeneRef
      * @return genePop
      */
-    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef) {
+    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef, Roi roi) {
         ImagePlus img = new Duplicator().run(imgGeneRef);
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
@@ -209,7 +230,7 @@ public class RNA_Scope_Processing {
         clij2.release(imgCLMed);
         ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
         clij2.release(imgCLDOG);
-        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin);
+        Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin, roi);
         
         clij2.release(imgCLBin);       
         return(genePop);
@@ -217,18 +238,17 @@ public class RNA_Scope_Processing {
     
     
     /**
-     * ramdom color nucleus population
+     * labelled color nucleus population
      */
-    public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img, boolean label) {
+    public static ImagePlus colorPop (Objects3DPopulation cellsPop,  ImagePlus img, boolean number) {
         //create image objects population
         Font tagFont = new Font("SansSerif", Font.PLAIN, 30);
         ImageHandler imgObj = ImageInt.wrap(img).createSameDimensions();
         imgObj.setCalibration(img.getCalibration());
         for (int i = 0; i < cellsPop.getNbObjects(); i++) {
-            int color = (int)(Math.random() * (255 - 1 + 1) + 1);
             Object3D obj = cellsPop.getObject(i);
-            obj.draw(imgObj, color);
-            if (label) {
+            obj.draw(imgObj, (i+1));
+            if (number) {
                 String name = Integer.toString(i+1);
                 int[] box = obj.getBoundingBox();
                 int z = (int)obj.getCenterZ();
@@ -237,7 +257,7 @@ public class RNA_Scope_Processing {
                 imgObj.getImagePlus().setSlice(z+1);
                 ImageProcessor ip = imgObj.getImagePlus().getProcessor();
                 ip.setFont(tagFont);
-                ip.setColor(color);
+                ip.setColor((i+1));
                 ip.drawString(name, x, y);
                 imgObj.getImagePlus().updateAndDraw();
             }
@@ -578,7 +598,7 @@ public class RNA_Scope_Processing {
     }
     
     /**
-     * Save nucleus with random colors
+     * Save nucleus with labbelled colors
      * @param imgNuc
      * @param cellsPop
      * @param outDirResults
