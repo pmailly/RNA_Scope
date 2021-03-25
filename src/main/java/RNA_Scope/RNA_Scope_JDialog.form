@@ -396,16 +396,29 @@
                               <Group type="103" groupAlignment="1" attributes="0">
                                   <Group type="102" attributes="0">
                                       <EmptySpace min="-2" pref="43" max="-2" attributes="0"/>
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="jLabelDAPICh" alignment="1" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabelGeneRefCh" alignment="1" min="-2" max="-2" attributes="0"/>
-                                          <Component id="jLabelGeneXCh" alignment="1" min="-2" max="-2" attributes="0"/>
-                                      </Group>
-                                      <EmptySpace min="-2" max="-2" attributes="0"/>
-                                      <Group type="103" groupAlignment="0" attributes="0">
-                                          <Component id="jComboBoxDAPICh" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="jComboBoxGeneRefCh" alignment="0" max="32767" attributes="0"/>
-                                          <Component id="jComboBoxGeneXCh" alignment="0" max="32767" attributes="0"/>
+                                      <Group type="103" groupAlignment="1" attributes="0">
+                                          <Group type="102" alignment="1" attributes="0">
+                                              <EmptySpace min="16" pref="16" max="-2" attributes="0"/>
+                                              <Component id="jLabelGeneXCh" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace min="-2" max="-2" attributes="0"/>
+                                              <Component id="jComboBoxGeneXCh" max="32767" attributes="0"/>
+                                          </Group>
+                                          <Group type="102" alignment="1" attributes="0">
+                                              <Group type="103" groupAlignment="1" attributes="0">
+                                                  <Component id="jLabelDAPICh" alignment="1" min="-2" max="-2" attributes="0"/>
+                                                  <Component id="jLabelGeneRefCh" alignment="1" min="-2" max="-2" attributes="0"/>
+                                              </Group>
+                                              <Group type="103" groupAlignment="0" attributes="0">
+                                                  <Group type="102" attributes="0">
+                                                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                                                      <Component id="jComboBoxGeneRefCh" max="32767" attributes="0"/>
+                                                  </Group>
+                                                  <Group type="102" attributes="0">
+                                                      <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
+                                                      <Component id="jComboBoxDAPICh" max="32767" attributes="0"/>
+                                                  </Group>
+                                              </Group>
+                                          </Group>
                                       </Group>
                                   </Group>
                                   <Group type="102" attributes="0">
@@ -460,25 +473,6 @@
                       </Group>
                       <EmptySpace max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <EmptySpace min="-2" pref="92" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jLabelThMethod" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelMinVol" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelMaxVol" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNucDil" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelSecToRemove" alignment="1" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jComboBoxThMethod" alignment="0" max="32767" attributes="0"/>
-                                  <Component id="jFormattedTextFieldMinVol" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
-                                  <Component id="jFormattedTextFieldMaxVol" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
-                                  <Component id="jFormattedTextFieldNucDil" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
-                                  <Component id="jFormattedTextFieldSecToRemove" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="32767" attributes="0"/>
-                          </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="1" attributes="0">
                                   <Component id="jLabelBgCalib" min="-2" max="-2" attributes="0"/>
@@ -496,26 +490,40 @@
                               </Group>
                               <EmptySpace max="32767" attributes="0"/>
                           </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <EmptySpace min="-2" pref="92" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" attributes="0">
+                                      <Component id="jCheckBoxNumberNucleus" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="32767" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" attributes="0">
+                                      <Group type="103" groupAlignment="1" attributes="0">
+                                          <Component id="jLabelThMethod" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelMinVol" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelMaxVol" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNucDil" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelSecToRemove" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="jComboBoxThMethod" alignment="0" max="32767" attributes="0"/>
+                                          <Component id="jFormattedTextFieldMinVol" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
+                                          <Component id="jFormattedTextFieldMaxVol" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
+                                          <Component id="jFormattedTextFieldNucDil" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
+                                          <Component id="jFormattedTextFieldSecToRemove" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="32767" attributes="0"/>
+                                  </Group>
+                              </Group>
+                          </Group>
                       </Group>
                   </Group>
                   <Group type="102" attributes="0">
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="102" attributes="0">
-                                      <EmptySpace min="-2" pref="455" max="-2" attributes="0"/>
-                                      <Component id="jLabelBgMethod" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Group type="102" alignment="0" attributes="0">
-                                      <EmptySpace min="-2" pref="405" max="-2" attributes="0"/>
-                                      <Component id="jLabelBgRoiSize" min="-2" max="-2" attributes="0"/>
-                                  </Group>
-                              </Group>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jFormattedTextFieldBgRoiSize" alignment="0" min="-2" pref="69" max="-2" attributes="0"/>
-                                  <Component id="jComboBoxBgMethod" alignment="0" min="-2" pref="135" max="-2" attributes="0"/>
-                              </Group>
+                          <Group type="102" alignment="0" attributes="0">
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jLabelCSpatialCalib" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <EmptySpace min="-2" pref="389" max="-2" attributes="0"/>
@@ -525,8 +533,21 @@
                               </Group>
                           </Group>
                           <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <EmptySpace min="-2" pref="405" max="-2" attributes="0"/>
+                                      <Component id="jLabelBgRoiSize" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <EmptySpace min="-2" pref="455" max="-2" attributes="0"/>
+                                      <Component id="jLabelBgMethod" min="-2" max="-2" attributes="0"/>
+                                  </Group>
+                              </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jLabelCSpatialCalib" min="-2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="jComboBoxBgMethod" min="-2" pref="135" max="-2" attributes="0"/>
+                                  <Component id="jFormattedTextFieldBgRoiSize" min="-2" pref="69" max="-2" attributes="0"/>
+                              </Group>
                           </Group>
                       </Group>
                       <EmptySpace max="32767" attributes="0"/>
@@ -543,6 +564,22 @@
                       </Group>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelDAPICh" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jComboBoxDAPICh" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelGeneRefCh" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jComboBoxGeneRefCh" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelGeneXCh" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jComboBoxGeneXCh" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                          </Group>
                           <Group type="102" alignment="0" attributes="0">
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="jLabelThMethod" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -569,24 +606,10 @@
                                   <Component id="jFormattedTextFieldSecToRemove" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelDAPICh" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jComboBoxDAPICh" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelGeneRefCh" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jComboBoxGeneRefCh" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelGeneXCh" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jComboBoxGeneXCh" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                          </Group>
                       </Group>
-                      <EmptySpace min="-2" pref="2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jCheckBoxNumberNucleus" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="1" attributes="0">
                           <Group type="102" attributes="0">
                               <Component id="jLabelCSpatialCalib" min="-2" max="-2" attributes="0"/>
@@ -637,7 +660,7 @@
                           </Group>
                           <Group type="102" attributes="0">
                               <Component id="jLabelBgCalib" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="separate" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="jFormattedTextFieldCalibBgGeneRef" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabelCalibBgGeneRef" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -649,7 +672,7 @@
                               </Group>
                           </Group>
                       </Group>
-                      <EmptySpace min="-2" pref="61" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="109" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -826,7 +849,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabelGeneXCh">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Gene X  :"/>
+                <Property name="text" type="java.lang.String" value="Gene X :"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JFormattedTextField" name="jFormattedTextFieldBgRoiSize">
@@ -993,7 +1016,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabelCalibX">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Size X  : "/>
+                <Property name="text" type="java.lang.String" value="size X  : "/>
               </Properties>
             </Component>
             <Component class="javax.swing.JFormattedTextField" name="jFormattedTextFieldCalibX">
@@ -1008,7 +1031,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabelCalibY">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Size Y  : "/>
+                <Property name="text" type="java.lang.String" value="size Y  : "/>
               </Properties>
             </Component>
             <Component class="javax.swing.JFormattedTextField" name="jFormattedTextFieldCalibY">
@@ -1023,7 +1046,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabelCalibZ">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Size Z : "/>
+                <Property name="text" type="java.lang.String" value="size Z : "/>
               </Properties>
             </Component>
             <Component class="javax.swing.JFormattedTextField" name="jFormattedTextFieldCalibZ">
@@ -1047,6 +1070,18 @@
                 </Property>
                 <Property name="text" type="java.lang.String" value="Spatial calibration"/>
               </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="jCheckBoxNumberNucleus">
+              <Properties>
+                <Property name="selected" type="boolean" value="true"/>
+                <Property name="text" type="java.lang.String" value="Numbered nucleus :"/>
+                <Property name="toolTipText" type="java.lang.String" value="Add number to nucleus objects image"/>
+                <Property name="horizontalTextPosition" type="int" value="2"/>
+              </Properties>
+              <Events>
+                <EventHandler event="itemStateChanged" listener="java.awt.event.ItemListener" parameters="java.awt.event.ItemEvent" handler="jCheckBoxNumberNucleusItemStateChanged"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jCheckBoxNumberNucleusActionPerformed"/>
+              </Events>
             </Component>
           </SubComponents>
         </Container>

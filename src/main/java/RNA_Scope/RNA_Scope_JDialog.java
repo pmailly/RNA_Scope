@@ -16,7 +16,6 @@ import static RNA_Scope_Utils.OmeroConnect.getUserId;
 import ij.IJ;
 import ij.measure.Calibration;
 import ij.process.AutoThresholder;
-import java.awt.event.ItemListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -236,6 +235,7 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
         jLabelCalibZ = new javax.swing.JLabel();
         jFormattedTextFieldCalibZ = new javax.swing.JFormattedTextField();
         jLabelCSpatialCalib = new javax.swing.JLabel();
+        jCheckBoxNumberNucleus = new javax.swing.JCheckBox();
         jButtonOk = new javax.swing.JToggleButton();
         jButtonCancel = new javax.swing.JToggleButton();
 
@@ -567,7 +567,7 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
 
         jLabelBgRoiSize.setText("Size of background box size : ");
 
-        jLabelGeneXCh.setText("Gene X  :");
+        jLabelGeneXCh.setText("Gene X :");
 
         jFormattedTextFieldBgRoiSize.setForeground(java.awt.Color.black);
         jFormattedTextFieldBgRoiSize.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(java.text.NumberFormat.getIntegerInstance())));
@@ -674,17 +674,17 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
 
         jLabelNucDil.setText("Nucleus dilatation : ");
 
-        jLabelCalibX.setText("Size X  : ");
+        jLabelCalibX.setText("size X  : ");
 
         jFormattedTextFieldCalibX.setForeground(java.awt.Color.black);
         jFormattedTextFieldCalibX.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(java.text.NumberFormat.getNumberInstance())));
 
-        jLabelCalibY.setText("Size Y  : ");
+        jLabelCalibY.setText("size Y  : ");
 
         jFormattedTextFieldCalibY.setForeground(java.awt.Color.black);
         jFormattedTextFieldCalibY.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(java.text.NumberFormat.getNumberInstance())));
 
-        jLabelCalibZ.setText("Size Z : ");
+        jLabelCalibZ.setText("size Z : ");
 
         jFormattedTextFieldCalibZ.setForeground(java.awt.Color.black);
         jFormattedTextFieldCalibZ.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter(java.text.NumberFormat.getNumberInstance())));
@@ -702,6 +702,21 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
         jLabelCSpatialCalib.setFont(new java.awt.Font("Cantarell", 3, 15)); // NOI18N
         jLabelCSpatialCalib.setText("Spatial calibration");
 
+        jCheckBoxNumberNucleus.setSelected(true);
+        jCheckBoxNumberNucleus.setText("Numbered nucleus :");
+        jCheckBoxNumberNucleus.setToolTipText("Add number to nucleus objects image");
+        jCheckBoxNumberNucleus.setHorizontalTextPosition(javax.swing.SwingConstants.LEFT);
+        jCheckBoxNumberNucleus.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                jCheckBoxNumberNucleusItemStateChanged(evt);
+            }
+        });
+        jCheckBoxNumberNucleus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jCheckBoxNumberNucleusActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanelParametersLayout = new javax.swing.GroupLayout(jPanelParameters);
         jPanelParameters.setLayout(jPanelParametersLayout);
         jPanelParametersLayout.setHorizontalGroup(
@@ -712,15 +727,23 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(jPanelParametersLayout.createSequentialGroup()
                                 .addGap(43, 43, 43)
-                                .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabelDAPICh, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelGeneRefCh, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelGeneXCh, javax.swing.GroupLayout.Alignment.TRAILING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jComboBoxDAPICh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jComboBoxGeneRefCh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jComboBoxGeneXCh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                        .addGap(16, 16, 16)
+                                        .addComponent(jLabelGeneXCh)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jComboBoxGeneXCh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelDAPICh)
+                                            .addComponent(jLabelGeneRefCh))
+                                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(jComboBoxGeneRefCh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                                .addGap(6, 6, 6)
+                                                .addComponent(jComboBoxDAPICh, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
                             .addGroup(jPanelParametersLayout.createSequentialGroup()
                                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -760,22 +783,6 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
-                        .addGap(92, 92, 92)
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabelThMethod, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabelMinVol, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabelMaxVol, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabelNucDil, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabelSecToRemove, javax.swing.GroupLayout.Alignment.TRAILING))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jComboBoxThMethod, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jFormattedTextFieldMinVol, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jFormattedTextFieldMaxVol, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jFormattedTextFieldNucDil, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jFormattedTextFieldSecToRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(jPanelParametersLayout.createSequentialGroup()
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jLabelBgCalib)
                             .addGroup(jPanelParametersLayout.createSequentialGroup()
@@ -786,29 +793,50 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jFormattedTextFieldCalibBgGeneRef, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(jFormattedTextFieldCalibBgGeneX, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addContainerGap())
+                    .addGroup(jPanelParametersLayout.createSequentialGroup()
+                        .addGap(92, 92, 92)
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                .addComponent(jCheckBoxNumberNucleus)
+                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelThMethod)
+                                    .addComponent(jLabelMinVol)
+                                    .addComponent(jLabelMaxVol)
+                                    .addComponent(jLabelNucDil)
+                                    .addComponent(jLabelSecToRemove))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jComboBoxThMethod, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jFormattedTextFieldMinVol, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jFormattedTextFieldMaxVol, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jFormattedTextFieldNucDil, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jFormattedTextFieldSecToRemove, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))))
             .addGroup(jPanelParametersLayout.createSequentialGroup()
                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanelParametersLayout.createSequentialGroup()
-                                .addGap(455, 455, 455)
-                                .addComponent(jLabelBgMethod))
-                            .addGroup(jPanelParametersLayout.createSequentialGroup()
-                                .addGap(405, 405, 405)
-                                .addComponent(jLabelBgRoiSize)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jFormattedTextFieldBgRoiSize, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jComboBoxBgMethod, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap()
+                        .addComponent(jLabelCSpatialCalib))
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
                         .addGap(389, 389, 389)
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabelBg)
                             .addComponent(jLabelNucleus)))
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabelCSpatialCalib)))
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                .addGap(405, 405, 405)
+                                .addComponent(jLabelBgRoiSize))
+                            .addGroup(jPanelParametersLayout.createSequentialGroup()
+                                .addGap(455, 455, 455)
+                                .addComponent(jLabelBgMethod)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jComboBoxBgMethod, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jFormattedTextFieldBgRoiSize, javax.swing.GroupLayout.PREFERRED_SIZE, 69, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanelParametersLayout.setVerticalGroup(
@@ -820,6 +848,18 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                     .addComponent(jLabelChannels))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanelParametersLayout.createSequentialGroup()
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabelDAPICh)
+                            .addComponent(jComboBoxDAPICh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabelGeneRefCh)
+                            .addComponent(jComboBoxGeneRefCh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabelGeneXCh)
+                            .addComponent(jComboBoxGeneXCh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabelThMethod)
@@ -839,20 +879,10 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabelSecToRemove)
-                            .addComponent(jFormattedTextFieldSecToRemove, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanelParametersLayout.createSequentialGroup()
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelDAPICh)
-                            .addComponent(jComboBoxDAPICh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelGeneRefCh)
-                            .addComponent(jComboBoxGeneRefCh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelGeneXCh)
-                            .addComponent(jComboBoxGeneXCh, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(2, 2, 2)
+                            .addComponent(jFormattedTextFieldSecToRemove, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxNumberNucleus)
+                .addGap(3, 3, 3)
                 .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
                         .addComponent(jLabelCSpatialCalib)
@@ -892,7 +922,7 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                             .addComponent(jLabelGeneXSingleDotInt)))
                     .addGroup(jPanelParametersLayout.createSequentialGroup()
                         .addComponent(jLabelBgCalib)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jFormattedTextFieldCalibBgGeneRef, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabelCalibBgGeneRef))
@@ -900,7 +930,7 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
                         .addGroup(jPanelParametersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jFormattedTextFieldCalibBgGeneX, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabelCalibBgGeneX))))
-                .addGap(61, 61, 61))
+                .addGap(109, 109, 109))
         );
 
         jFormattedTextFieldNucDil.setValue(rna.nucDil);
@@ -1317,6 +1347,16 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
             cal.pixelDepth = ((Number)jFormattedTextFieldCalibZ.getValue()).intValue();
     }//GEN-LAST:event_jFormattedTextFieldCalibZPropertyChange
 
+    private void jCheckBoxNumberNucleusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jCheckBoxNumberNucleusActionPerformed
+        // TODO add your handling code here:
+        rna.nucNumber = jCheckBoxNumberNucleus.isSelected();
+    }//GEN-LAST:event_jCheckBoxNumberNucleusActionPerformed
+
+    private void jCheckBoxNumberNucleusItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_jCheckBoxNumberNucleusItemStateChanged
+        // TODO add your handling code here:
+        rna.nucNumber = jCheckBoxNumberNucleus.isSelected();
+    }//GEN-LAST:event_jCheckBoxNumberNucleusItemStateChanged
+
     /**
      * @param args the command line arguments
      */
@@ -1364,6 +1404,7 @@ public class RNA_Scope_JDialog extends javax.swing.JDialog {
     private javax.swing.JToggleButton jButtonCancel;
     private javax.swing.JButton jButtonConnect;
     private javax.swing.JToggleButton jButtonOk;
+    private javax.swing.JCheckBox jCheckBoxNumberNucleus;
     private javax.swing.JComboBox jComboBoxBgMethod;
     private javax.swing.JComboBox jComboBoxDAPICh;
     private javax.swing.JComboBox<String> jComboBoxDatasets;
