@@ -36,8 +36,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -204,6 +202,19 @@ private Calibration cal = new Calibration();
     }
     
     
+    /**
+     * find rois with name = serieName
+     */
+    public static ArrayList<Roi> findRoi(RoiManager rm, String seriesName) {
+        ArrayList<Roi> roi = new ArrayList();
+        for (int i = 0; i < rm.getCount(); i++) {
+            rm.select(i);
+            String name = rm.getName(i);
+            if (name.contains(seriesName))
+                roi.add(rm.getRoi(i));
+        }
+        return(roi);
+    }
     
     
   @Override
@@ -239,7 +250,8 @@ private Calibration cal = new Calibration();
             reader.setMetadataStore(meta);
             int series = 0;
             int imageNum = 0;
-            List<String> channels = new LinkedList<>();
+            List<String> channels = new ArrayList<>();
+            ArrayList<String> ch = new ArrayList<>();
             for (String f : imageFiles) {
                 String rootName = FilenameUtils.getBaseName(f);
                 reader.setId(f);
@@ -251,7 +263,6 @@ private Calibration cal = new Calibration();
                         return;
                 }
                 else {
-                    ArrayList<String> ch = new ArrayList<>();
                     if (imageNum == 0) {
                         cal = findImageCalib(meta);
                         channels = findChannels(f);
@@ -274,8 +285,6 @@ private Calibration cal = new Calibration();
                     options.setColorMode(ImporterOptions.COLOR_MODE_GRAYSCALE);
                     options.setId(f);
                     options.setSplitChannels(true);  
-                    options.setCBegin(0, 1);
-                    options.setCEnd(0, 2);
                     options.setQuiet(true);
                     options.setCrop(true);
 
@@ -286,54 +295,62 @@ private Calibration cal = new Calibration();
                     Objects3DPopulation geneRefPop = new Objects3DPopulation();
                     Objects3DPopulation geneXPop = new Objects3DPopulation();
                         
-                    // sort roi
-                    RoiManager rmSorted = roiSort(rm);
-                    rm.close();
-                    // for all rois
-                    boolean bgRef = false, bgX = false;
+                    // find background rois
+                    ArrayList<Roi> roiBg = findRoi(rm, "bg");
+                    if (roiBg.size() == 0) {
+                        System.out.println("No background roi found !!!!");
+                        return;
+                    }
                     double geneRefBgInt = 0, geneXBgInt = 0;
-                    for (int r = 0; r < rmSorted.getCount(); r++) {
-                        Roi roi = rmSorted.getRoi(r);
+                    int channel = 0;
+                    for (Roi roi : roiBg) {
                         String roiName = roi.getName();
                         Rectangle rect = roi.getBounds();
                         Region reg = new Region(rect.x, rect.y, rect.width, rect.height);
                         options.setCropRegion(0, reg);
-
-                        int channel = 0;
-                        if (roiName.contains("bg")) {
-                            // background
-                            if (roiName.contains("ref"))  {
-                                // Open Gene reference channel
-                                channel = channels.indexOf(ch.get(1));
-                                imgGeneRef = BF.openImagePlus(options)[channel -1];
-                                geneRefBgInt = find_background(imgGeneRef, 1, imgGeneRef.getNSlices());
-                                System.out.println("Background reference gene channel "+geneRefBgInt);
-                                bgRef = true;
-                            }
-                            else {
-                                // Open Gene X channel
-                                System.out.println("Opening X gene channel ...");
-                                channel = channels.indexOf(ch.get(2));
-                                imgGeneX = BF.openImagePlus(options)[channel-1];
-                                geneXBgInt = find_background(imgGeneX, 1, imgGeneX.getNSlices());
-                                System.out.println("Background X gene channel "+geneXBgInt);
-                                bgX = true;
-                            }
+                        if (roiName.contains("ref"))  {
+                            // Open Gene reference channel
+                            System.out.println("Opening Ref gene channel for background...");
+                            imgGeneRef = BF.openImagePlus(options)[channels.indexOf(ch.get(1))];
+                            geneRefBgInt = find_background(imgGeneRef, 1, imgGeneRef.getNSlices());
+                            System.out.println("Background reference gene channel "+geneRefBgInt);
+                            imgGeneRef.close();
                         }
-                        else if (bgRef || bgX) {
+                        else {
+                            // Open Gene X channel
+                            System.out.println("Opening X gene channel for background...");
+                            if (channels.size() == 3)
+                                channel = channels.indexOf(ch.get(2));
+                            else
+                                channel = channels.indexOf(ch.get(1));
+                            imgGeneX = BF.openImagePlus(options)[channel];
+                            geneXBgInt = find_background(imgGeneX, 1, imgGeneX.getNSlices());
+                            System.out.println("Background X gene channel "+geneXBgInt);
+                            imgGeneX.close();
+                        }
+                    }
+                    // read others rois no background
+                    for (int r = 0; r < rm.getCount(); r++) {
+                        Roi roi = rm.getRoi(r);
+                        String roiName = roi.getName();
+                        if (!roiName.contains("bg")) {
+                            Rectangle rect = roi.getBounds();
+                            Region reg = new Region(rect.x, rect.y, rect.width, rect.height);
+                            options.setCropRegion(0, reg);
                             double geneRefInt = 0, geneXInt = 0;
                             double geneRefIntCor = 0, geneXIntCor = 0;
-                            
-                            if (bgRef) {
-                                // find intensity for gene ref
-                                channel = channels.indexOf(ch.get(1));
-                                imgGeneRef = BF.openImagePlus(options)[channel-1];
+                            // for gene Ref
+                            if (channels.size() == 3) {
+                                imgGeneRef = BF.openImagePlus(options)[channels.indexOf(ch.get(1))];
                                 geneRefInt = find_Integrated(imgGeneRef, roi);
                                 geneRefPop = findGenePop(imgGeneRef, roi);
                             }
                             // for gene X
-                            channel = channels.indexOf(ch.get(2));
-                            imgGeneX = BF.openImagePlus(options)[channel-1];
+                            if (channels.size() == 3)
+                                channel = channels.indexOf(ch.get(2));
+                            else
+                                channel = channels.indexOf(ch.get(1));
+                            imgGeneX = BF.openImagePlus(options)[channel];
                             geneXInt = find_Integrated(imgGeneX, roi);
                             double geneVol = find_Volume(imgGeneX, roi);
                             geneXPop = findGenePop(imgGeneX, roi);
@@ -347,11 +364,12 @@ private Calibration cal = new Calibration();
                             double geneRefDotsInt = 0;
                             double geneRefDotsVol =0;
                             // find dots integrated intensity
-                            for (int n = 0; n < geneRefPop.getNbObjects(); n++) {
-                                Object3D dotobj = geneRefPop.getObject(n);
-                                if (channels.size() == 3)
+                            if (channels.size() == 3) {
+                                for (int n = 0; n < geneRefPop.getNbObjects(); n++) {
+                                    Object3D dotobj = geneRefPop.getObject(n);
                                     geneRefDotsInt += dotobj.getIntegratedDensity(ImageHandler.wrap(imgGeneRef));
-                                geneRefDotsVol += dotobj.getVolumePixels();
+                                    geneRefDotsVol += dotobj.getVolumePixels();
+                                }
                             }
                             double geneRefDotsIntCor = geneRefDotsInt - geneRefBgInt*geneRefDotsVol;
                             double geneXDotsInt = 0;
@@ -368,7 +386,8 @@ private Calibration cal = new Calibration();
                             output_Analyze.flush();
                         }                            
                     }
-                    closeImages(imgGeneRef);
+                    if (imgGeneRef != null)
+                        closeImages(imgGeneRef);
                     closeImages(imgGeneX);
                 }
             }
