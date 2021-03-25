@@ -7,7 +7,6 @@ package RNA_Scope;
 
 
 import RNA_Scope_Utils.Dot;
-import RNA_Scope_Utils.RNA_Scope_Processing;
 import static RNA_Scope_Utils.RNA_Scope_Processing.closeImages;
 import static RNA_Scope_Utils.RNA_Scope_Processing.findGenePop;
 import static RNA_Scope_Utils.RNA_Scope_Processing.find_background;
@@ -194,7 +193,7 @@ private static BufferedWriter output_dotCalib;
                         System.out.println("Pointed dots found = "+dotsCenter.size());
                         
                         // 3D dots segmentation
-                        Objects3DPopulation dotsPop = findGenePop(img);
+                        Objects3DPopulation dotsPop = findGenePop(img, null);
                         System.out.println("Total dots found = "+dotsPop.getNbObjects());
                         
                         

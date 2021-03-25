@@ -40,6 +40,7 @@ public class RNA_Scope_Main implements PlugIn {
     public static int roiBgSize = 100;
     public static float nucDil = 3;
     public static int removeSlice = 0;
+    public static boolean nucNumber = true;
     
        
     /**
