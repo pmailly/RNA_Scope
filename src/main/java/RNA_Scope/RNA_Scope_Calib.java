@@ -192,7 +192,7 @@ private BufferedWriter output_dotCalib;
                         System.out.println("Pointed dots found = "+dotsCenter.size());
                         
                         // 3D dots segmentation
-                        Objects3DPopulation dotsPop = findGenePop(img, null);
+                        Objects3DPopulation dotsPop = findGenePop(img, null, "Isodata");
                         System.out.println("Total dots found = "+dotsPop.getNbObjects());
                         
                         

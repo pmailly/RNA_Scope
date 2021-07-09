@@ -103,7 +103,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         ImagePlus imgGeneRef = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
                         
                         // Find gene reference dots
-                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef, null);
+                        Objects3DPopulation geneRefDots = findGenePop(imgGeneRef, null, "Isodata");
                         System.out.println(geneRefDots.getNbObjects() + " gene dots ref found");
                         
                         /*
@@ -114,7 +114,7 @@ public class RNA_Scope_Omero implements PlugIn {
                         ImagePlus imgGeneX = getImageZ(image, 1, channelIndex + 1, zStart, zStop).getImagePlus();
 
                         // Find gene X dots
-                        Objects3DPopulation geneXDots = findGenePop(imgGeneX, null);
+                        Objects3DPopulation geneXDots = findGenePop(imgGeneX, null, "Isodata");
                         System.out.println(geneXDots.getNbObjects() + " gene dots X found");
                         
                         // find background from roi

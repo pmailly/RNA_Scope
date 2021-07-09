@@ -24,6 +24,7 @@ import ij.measure.Measurements;
 import ij.measure.ResultsTable;
 import ij.plugin.PlugIn;
 import ij.plugin.RGBStackMerge;
+import ij.plugin.Thresholder;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import java.awt.Color;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.ImageIcon;
 import loci.common.Region;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
@@ -65,6 +67,9 @@ public class RNA_Scope_Roi implements PlugIn {
 private String imageDir = "";
 private String outDirResults = "";
 private Calibration cal = new Calibration();   
+public final ImageIcon icon = new ImageIcon(this.getClass().getResource("/Orion_icon.png"));
+private String thMet = "Moments";
+
 
     /*
     * Integrated intensity
@@ -118,8 +123,11 @@ private Calibration cal = new Calibration();
      */
     public ArrayList dialog(List<String> channels) {
         ArrayList ch = new ArrayList();
+        String[] thMethods = new Thresholder().methods;
         String[] channel = channels.toArray(new String[channels.size()]);
         GenericDialogPlus gd = new GenericDialogPlus("Parameters");
+        gd.setInsets​(0, 80, 0);
+        gd.addImage(icon);
         gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
         gd.addChoice("DAPI           : ", channel, channel[0]);
         if (channels.size() == 3) {
@@ -132,7 +140,7 @@ private Calibration cal = new Calibration();
         if (channels.size() == 3) 
             gd.addNumericField("Gene reference single dot mean intensity : ", singleDotIntGeneRef, 0);
         gd.addNumericField("Gene X single dot mean intensity : ", singleDotIntGeneX, 0);
-        
+        gd.addChoice("Dots threshold method : ", thMethods, thMet);
         gd.showDialog();
         ch.add(0, gd.getNextChoice());
         if (channels.size() == 3) {
@@ -144,7 +152,7 @@ private Calibration cal = new Calibration();
         if (channels.size() == 3)
             singleDotIntGeneRef = gd.getNextNumber();
         singleDotIntGeneX = gd.getNextNumber();
-        
+        thMet = gd.getNextChoice();
         if(gd.wasCanceled())
             ch = null;
         return(ch);
@@ -343,7 +351,7 @@ private Calibration cal = new Calibration();
                             if (channels.size() == 3) {
                                 imgGeneRef = BF.openImagePlus(options)[channels.indexOf(ch.get(1))];
                                 geneRefInt = find_Integrated(imgGeneRef, roi);
-                                geneRefPop = findGenePop(imgGeneRef, roi);
+                                geneRefPop = findGenePop(imgGeneRef, roi, thMet);
                             }
                             // for gene X
                             if (channels.size() == 3)
@@ -353,7 +361,7 @@ private Calibration cal = new Calibration();
                             imgGeneX = BF.openImagePlus(options)[channel];
                             geneXInt = find_Integrated(imgGeneX, roi);
                             double geneVol = find_Volume(imgGeneX, roi);
-                            geneXPop = findGenePop(imgGeneX, roi);
+                            geneXPop = findGenePop(imgGeneX, roi, thMet);
 
                             // corrected value    
                             geneXIntCor = geneXInt - geneXBgInt*geneVol;

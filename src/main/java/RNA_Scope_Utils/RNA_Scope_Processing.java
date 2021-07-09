@@ -226,14 +226,14 @@ public class RNA_Scope_Processing {
      * @param imgGeneRef
      * @return genePop
      */
-    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef, Roi roi) {
+    public static Objects3DPopulation findGenePop(ImagePlus imgGeneRef, Roi roi, String thMet) {
         ImagePlus img = new Duplicator().run(imgGeneRef);
         ClearCLBuffer imgCL = clij2.push(img);
         ClearCLBuffer imgCLMed = medianFilter(imgCL, 1, 1, 1);
         clij2.release(imgCL);
         ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
         clij2.release(imgCLMed);
-        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "Moments", false); 
+        ClearCLBuffer imgCLBin = threshold(imgCLDOG, thMet, false); 
         clij2.release(imgCLDOG);
         Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin, roi);
         
