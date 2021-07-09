@@ -66,6 +66,8 @@ import org.xml.sax.SAXException;
 public class RNA_Scope_Processing {
     
     public static CLIJ2 clij2 = CLIJ2.getInstance();
+    private static double minDots = 0.5;
+    private static double maxDots = 10;
       
     
     /**
@@ -111,9 +113,12 @@ public class RNA_Scope_Processing {
             clearOutSide(imgLab, roi);
         }   
         ImageInt labels = new ImageLabeller().getLabels(ImageHandler.wrap(imgLab));
+        labels.setCalibration(cal);
         Objects3DPopulation pop = new Objects3DPopulation(labels);
+        Objects3DPopulation popFil = new Objects3DPopulation(pop.getObjectsWithinVolume(minDots, maxDots, true));
+        pop = null;
         clij2.release(output);
-        return pop;
+        return (popFil);
     }  
     
     
@@ -228,7 +233,7 @@ public class RNA_Scope_Processing {
         clij2.release(imgCL);
         ClearCLBuffer imgCLDOG = DOG(imgCLMed, 1, 1, 1, 2, 2, 2);
         clij2.release(imgCLMed);
-        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "IsoData", false); 
+        ClearCLBuffer imgCLBin = threshold(imgCLDOG, "Moments", false); 
         clij2.release(imgCLDOG);
         Objects3DPopulation genePop = getPopFromClearBuffer(imgCLBin, roi);
         

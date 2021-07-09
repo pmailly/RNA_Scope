@@ -273,9 +273,9 @@ private Calibration cal = new Calibration();
                         }
                         // write headers
                         output_Analyze.write("Image Name\tRoi\tGene Vol\tCells Integrated intensity in gene ref. channel\tMean background intensity in ref. channel\t"
-                            + "Total dots gene ref. (based on cells intensity)\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
-                            + "Total dots gene ref (based on dots seg intensity)\tCells Integrated intensity in gene X channel\tMean background intensity in X channel\t"
-                            + "Total dots gene X (based on cells intensity)\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)\n");
+                            + "Total dots gene ref. (based on cells intensity)/µm3\tDots ref. volume (pixel3)\tIntegrated intensity of dots ref. channel\t"
+                            + "Total dots gene ref (based on dots seg intensity)/µm3\tCells Integrated intensity in gene X channel\tMean background intensity in X channel\t"
+                            + "Total dots gene X (based on cells intensity)/µm3\tDots X volume (pixel3)\tIntegrated intensity of dots X channel\tTotal dots gene X (based on dots seg intensity)/µm3\n");
                         output_Analyze.flush();
                     }
                     imageNum++;
@@ -380,9 +380,11 @@ private Calibration cal = new Calibration();
                                 geneXDotsVol += dotobj.getVolumePixels();
                             }
                             double geneXDotsIntCor = geneXDotsInt - geneXBgInt*geneXDotsVol;
-                            output_Analyze.write(rootName+"\t"+roiName+"\t"+geneVol+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+geneRefIntCor/singleDotIntGeneRef+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
-                                    geneRefDotsIntCor/singleDotIntGeneRef+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+
-                                    geneXIntCor/singleDotIntGeneX+"\t"+geneXDotsIntCor/singleDotIntGeneX+"\n");
+                            double geneRefDotsVol_micron = geneRefDotsVol*cal.pixelWidth*cal.pixelHeight*cal.pixelDepth;
+                            double geneXDotsVol_micron = geneXDotsVol*cal.pixelWidth*cal.pixelHeight*cal.pixelDepth;
+                            output_Analyze.write(rootName+"\t"+roiName+"\t"+geneVol+"\t"+geneRefInt+"\t"+geneRefBgInt+"\t"+(geneRefIntCor/singleDotIntGeneRef)/geneVol+"\t"+geneRefDotsVol+"\t"+geneRefDotsIntCor+"\t"+
+                                    (geneRefDotsIntCor/singleDotIntGeneRef/geneRefDotsVol_micron)+"\t"+geneXInt+"\t"+geneXBgInt+"\t"+geneXDotsVol+"\t"+geneXIntCor+"\t"+
+                                    (geneXIntCor/singleDotIntGeneX)/geneVol+"\t"+(geneXDotsIntCor/singleDotIntGeneX)/geneXDotsVol_micron+"\n");
                             output_Analyze.flush();
                         }                            
                     }
